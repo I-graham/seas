@@ -15,6 +15,15 @@ pub struct Instance2D {
     pub z_coord: GLfloat,
 }
 
+impl Instance2D {
+    pub fn scale(&self, r: f32) -> Self {
+        Self {
+            scale: GLvec2(r * self.scale.0, r * self.scale.1),
+            ..*self
+        }
+    }
+}
+
 impl Default for Instance2D {
     fn default() -> Self {
         Instance2D {

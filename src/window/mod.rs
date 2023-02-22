@@ -63,7 +63,7 @@ impl WinApi {
             &Uniform {
                 ortho: self.view.proj(self.aspect),
             },
-            &[self.texture_map[&ClientTexture::ShipSheet]],
+            &[self.texture_map[&ClientTexture::Troop].scale(0.5)],
         );
     }
 
