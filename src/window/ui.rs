@@ -1,5 +1,5 @@
-use super::reng::*;
-use super::types::GLvec4;
+use super::types::{GLvec2, GLvec4};
+use super::{reng::*, types::Instance2D};
 
 use fnv::FnvHashMap;
 use std::hash::Hash;
@@ -16,10 +16,12 @@ pub fn in_rect(point: (f32, f32), scale: (f32, f32), pos: (f32, f32)) -> bool {
 #[derive(IntoStaticStr, EnumIter, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum ClientTexture {
     Flat,
+    Troop,
+    ShipSheet
 }
 
 impl ClientTexture {
-    pub fn load_textures() -> (image::RgbaImage, FnvHashMap<ClientTexture, GLvec4>) {
+    pub fn load_textures() -> (image::RgbaImage, FnvHashMap<ClientTexture, Instance2D>) {
         let mut map = FnvHashMap::default();
 
         let mut rgba_images = Self::iter()
@@ -46,18 +48,27 @@ impl ClientTexture {
             (norm_x, norm_y)
         };
 
-        for (text, pos) in sorted_iter
+        for (text, &(ul, lr)) in sorted_iter
             .iter()
             .map(|(_index, text)| text)
             .zip(&spritesheet.1)
         {
-            let coord_ul = pixel_to_text_coord(pos.0);
-            let coord_lr = pixel_to_text_coord(pos.1);
+            let (ulx, uly) = pixel_to_text_coord(dbg!(ul));
+            let (lrx, lry) = pixel_to_text_coord(dbg!(lr));
 
-            let coords = GLvec4(coord_ul.0, coord_ul.1, coord_lr.0, coord_lr.1);
+            let texture = GLvec4(ulx, uly, lrx, lry);
 
-            map.insert(*text, coords);
+            map.insert(
+                *text,
+                Instance2D {
+                    texture,
+                    scale: GLvec2((lr.0 - ul.0) as f32 / (lr.1 - ul.1) as f32, 1.0),
+                    ..Default::default()
+                },
+            );
         }
+
+        spritesheet.0.save("image.png");
 
         (spritesheet.0, map)
     }
@@ -102,22 +113,22 @@ pub enum MouseState {
 }
 
 impl MouseState {
-	pub fn update(&mut self, down : bool) {
-		use MouseState::*;
-		match *self {
-			Up | Release if  down => *self = Click,
-			Click        if  down => *self = Drag,
-			Drag | Click if !down => *self = Release,
-			Release      if !down => *self = Up,
-			_ =>(),
-		}
-	}
+    pub fn update(&mut self, down: bool) {
+        use MouseState::*;
+        match *self {
+            Up | Release if down => *self = Click,
+            Click if down => *self = Drag,
+            Drag | Click if !down => *self = Release,
+            Release if !down => *self = Up,
+            _ => (),
+        }
+    }
 
-	pub fn is_down(&self) -> bool {
-		use MouseState::*;
-		match *self {
-			Up | Release => false,
-			Click | Drag => true,
-		}
-	}
+    pub fn is_down(&self) -> bool {
+        use MouseState::*;
+        match *self {
+            Up | Release => false,
+            Click | Drag => true,
+        }
+    }
 }
