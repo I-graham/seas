@@ -15,9 +15,7 @@ pub fn in_rect(point: (f32, f32), scale: (f32, f32), pos: (f32, f32)) -> bool {
 
 #[derive(IntoStaticStr, EnumIter, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum ClientTexture {
-    Flat,
     Troop,
-    ShipSheet
 }
 
 impl ClientTexture {
@@ -53,8 +51,8 @@ impl ClientTexture {
             .map(|(_index, text)| text)
             .zip(&spritesheet.1)
         {
-            let (ulx, uly) = pixel_to_text_coord(dbg!(ul));
-            let (lrx, lry) = pixel_to_text_coord(dbg!(lr));
+            let (ulx, uly) = pixel_to_text_coord(ul);
+            let (lrx, lry) = pixel_to_text_coord(lr);
 
             let texture = GLvec4(ulx, uly, lrx, lry);
 
@@ -67,8 +65,6 @@ impl ClientTexture {
                 },
             );
         }
-
-        spritesheet.0.save("image.png");
 
         (spritesheet.0, map)
     }
