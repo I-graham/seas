@@ -5,7 +5,7 @@ pub struct Uniform {
 }
 
 #[repr(C, align(16))]
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Instance2D {
     pub color_tint: GLvec4,
     pub texture: GLvec4,
