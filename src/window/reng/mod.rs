@@ -4,20 +4,18 @@ pub mod utils;
 
 pub use data::*;
 
-pub struct Renderer2D<UniformType: Copy + PartialEq, InstanceType> {
+pub struct Renderer<UniformType: Copy + PartialEq, InstanceType> {
     resources: resources::RenderResources2D<UniformType, InstanceType>,
     render_data: data::RenderData,
     uniform: Option<UniformType>,
 }
 
-impl<UniformType: Copy + PartialEq, InstanceType> Renderer2D<UniformType, InstanceType> {
+impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, InstanceType> {
     const PREALLOCATED_INSTANCES: usize = 16;
 
     pub fn new(win: &winit::window::Window, sample_count: u32) -> Self {
-        let resources = futures::executor::block_on(resources::RenderResources2D::<
-            UniformType,
-            InstanceType,
-        >::new(win, sample_count));
+        let resources =
+            resources::RenderResources2D::<UniformType, InstanceType>::new(win, sample_count);
 
         let uniform_buffer = resources.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Uniform"),
@@ -213,7 +211,6 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer2D<UniformType, Instan
             self.resources.create_encoder(),
         );
 
-
         self.render_data.staging_belt.finish();
 
         self.resources.queue.submit(Some(encoder.finish()));
@@ -227,7 +224,6 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer2D<UniformType, Instan
 
     pub fn resize(&mut self, dims: winit::dpi::PhysicalSize<u32>) {
         self.resources.resize(dims);
-        drop(self.render_data.current_frame.take());
     }
 
     pub fn clear(&mut self, color: wgpu::Color) {
@@ -246,6 +242,10 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer2D<UniformType, Instan
                 })],
                 depth_stencil_attachment: None,
             });
+    }
+
+    pub fn is_cached(&mut self, name: &'static str) -> bool {
+        self.render_data.cached_buffers.contains_key(name)
     }
 
     pub fn cache(&mut self, name: &'static str, instances: &[InstanceType]) {

@@ -11,7 +11,6 @@ struct Instance {
 	vec2  scale;
 	vec2  translate;
 	float rotation;
-	float z_coord;
 };
 
 layout(set=1, binding=0, std140)
@@ -54,7 +53,7 @@ void main() {
 	vec2 coord = positions[index];
 
     vec2 pos = rotv2(coord, inst.rotation) * inst.scale + inst.translate;
-	gl_Position = ortho * vec4(pos, inst.z_coord, 1.0);
+	gl_Position = ortho * vec4(pos, 0.0, 1.0);
 	text_coords = inst_coords[index];
 	color_tint  = inst.tint;
 }
