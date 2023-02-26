@@ -16,31 +16,6 @@ pub fn to_char_slice<T>(array: &[T]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(data_ptr, array.len() * size) }
 }
 
-pub fn create_multisampled_framebuffer(
-    device: &wgpu::Device,
-    surface_conf: &wgpu::SurfaceConfiguration,
-    sample_count: u32,
-) -> (wgpu::Texture, wgpu::TextureView) {
-    let texture = device.create_texture(&wgpu::TextureDescriptor {
-        size: wgpu::Extent3d {
-            width: surface_conf.width,
-            height: surface_conf.height,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count,
-        dimension: wgpu::TextureDimension::D2,
-        format: surface_conf.format,
-        view_formats: &[surface_conf.format],
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        label: None,
-    });
-
-    let view = texture.create_view(&Default::default());
-
-    (texture, view)
-}
-
 type Coords = (u32, u32);
 type Dimens = (u32, u32);
 

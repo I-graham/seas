@@ -8,7 +8,7 @@ pub(super) struct World {
 impl World {
 	pub fn new() -> Self {
 		Self {
-			animation: Animation::new(Texture::ShipSheet, 5.0),
+			animation: Animation::new(Texture::ShipSheet, 0.1, Some(10.)),
 		}
 	}
 }
