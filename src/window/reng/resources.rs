@@ -15,35 +15,32 @@ pub struct RenderResources2D<UniformType, InstanceType> {
 }
 
 impl<UniformType, InstanceType> RenderResources2D<UniformType, InstanceType> {
-    pub async fn new(win: &winit::window::Window, sample_count: u32) -> Self {
+    pub fn new(win: &winit::window::Window, sample_count: u32) -> Self {
         let win_size = win.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
 
         let surface = unsafe { instance.create_surface(win).unwrap() };
 
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::LowPower,
-                compatible_surface: Some(&surface),
-                ..Default::default()
-            })
-            .await
-            .unwrap();
+        use futures::executor::block_on;
+        let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            compatible_surface: Some(&surface),
+            ..Default::default()
+        }))
+        .unwrap();
 
         let adapter_features = adapter.features();
 
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    features: adapter_features,
-                    limits: Default::default(),
-                },
-                None,
-            )
-            .await
-            .unwrap();
+        let (device, queue) = futures::executor::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: adapter_features,
+                limits: Default::default(),
+            },
+            None,
+        ))
+        .unwrap();
 
         let surf_caps = surface.get_capabilities(&adapter);
         let surf_fmt = wgpu::TextureFormat::Rgba8UnormSrgb;
