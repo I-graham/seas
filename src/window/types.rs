@@ -94,36 +94,41 @@ pub trait Renderable {
 
 #[derive(Clone)]
 pub struct Animation {
+	start: Instant,
 	text: Texture,
-	last_update: Instant,
-	frame: u32,
 	duration: f32,
+	repeat: Option<f32>, //None means repeat forever
 }
 
 impl Animation {
-	pub fn new(text: Texture, duration: f32) -> Self {
+	pub fn new(text: Texture, duration: f32, repeat: Option<f32>) -> Self {
 		Self {
+			start: Instant::now(),
 			text,
-			last_update: Instant::now(),
-			frame: 0,
-            duration,
+			duration,
+			repeat,
 		}
 	}
 
-	pub fn reset(&mut self) {
-		self.last_update = Instant::now()
+	pub fn get_frame(&self, text_map: &TextureMap, now: Instant) -> Instance {
+		let elapsed = now.duration_since(self.start).as_secs_f32();
+		let frame_count = self.text.frame_count();
+
+		let frame = match self.repeat {
+			Some(reps) if elapsed > reps * self.duration => frame_count - 1,
+			_ => (frame_count as f32 * (elapsed / self.duration % 1.)) as u32,
+		};
+
+		text_map[&self.text].at_frame_n(frame, frame_count)
+	}
+
+	pub fn restart(&mut self) {
+		self.start = Instant::now()
 	}
 }
 
 impl Renderable for Animation {
 	fn render(&mut self, text_map: &TextureMap, out: &mut Vec<Instance>, now: Instant) {
-		let delta = now.duration_since(self.last_update).as_secs_f32();
-		let frames = self.text.frame_count();
-		if delta > self.duration / (frames as f32) {
-			self.reset();
-			self.frame += 1;
-			self.frame %= frames;
-		}
-		out.push(text_map[&self.text].at_frame_n(self.frame, frames));
+		out.push(self.get_frame(text_map, now))
 	}
 }
