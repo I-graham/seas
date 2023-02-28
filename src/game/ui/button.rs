@@ -41,10 +41,10 @@ impl<T> GameObject for Button<T> {
 	fn update(&mut self, input: &Input) -> Action {
 		match input.left_mouse {
 			MouseState::Click if self.includes(input.mouse_pos) => {
-				self.on_click.map(|listener| listener(&mut self.state));
+				if let Some(listener) = self.on_click { listener(&mut self.state) }
 			}
 			MouseState::Release if self.includes(input.mouse_pos) => {
-				self.on_release.map(|listener| listener(&mut self.state));
+				if let Some(listener) = self.on_release { listener(&mut self.state) }
 			}
 			_ => {}
 		}
