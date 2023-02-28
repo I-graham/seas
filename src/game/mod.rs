@@ -1,7 +1,31 @@
+mod ship;
 mod state;
+mod ui;
 mod world;
 
+use crate::window::{Camera, Context, Input, Instance};
+use std::time::Instant;
 use winit::event_loop::EventLoop;
+
+pub enum Action {
+	Nothing,
+	Delete,
+}
+
+pub trait GameObject {
+	fn update(&mut self, _input: &Input) -> Action {
+		Action::Nothing
+	}
+
+	fn render(
+		&mut self,
+		_context: &Context,
+		_view: &Camera,
+		_out: &mut Vec<Instance>,
+		_now: Instant,
+	) {
+	}
+}
 
 pub fn play() -> ! {
 	use winit::event::{Event, WindowEvent};
@@ -21,21 +45,24 @@ pub fn play() -> ! {
 					game.api.resize(dims);
 				}
 
-				WindowEvent::KeyboardInput { input, .. } => game.api.capture_key(input),
+				WindowEvent::KeyboardInput { input, .. } => game.api.input.capture_key(input),
 
 				WindowEvent::MouseWheel { delta, .. } => {
 					use winit::dpi::PhysicalPosition;
 					use winit::event::MouseScrollDelta::*;
-					game.api.scroll = match delta {
+					game.api.input.scroll = match delta {
 						LineDelta(_hor, ver) => ver,
 						PixelDelta(PhysicalPosition { y, .. }) => y as f32,
 					};
 				}
 
-				WindowEvent::CursorMoved { position, .. } => game.api.capture_mouse(&position),
+				WindowEvent::CursorMoved { position, .. } => {
+					game.api.input.capture_mouse(&position)
+				}
 
 				WindowEvent::MouseInput { button, state, .. } => game
 					.api
+					.input
 					.mouse_button(&button, state == winit::event::ElementState::Pressed),
 
 				_ => {}
