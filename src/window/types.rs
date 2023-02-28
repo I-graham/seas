@@ -6,10 +6,22 @@ use strum_macros::{EnumIter, IntoStaticStr};
 
 pub type TextureMap = fnv::FnvHashMap<Texture, Instance>;
 
+pub struct Context {
+	pub texture_map: TextureMap,
+	pub aspect: f32,
+}
+
+impl Context {
+	pub fn get_inst(&self, texture: Texture) -> Instance {
+		self.texture_map[&texture]
+	}
+}
+
 #[derive(IntoStaticStr, EnumIter, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum Texture {
 	Flat,
 	ShipSheet,
+	ReadyButton,
 }
 
 impl Texture {
@@ -66,6 +78,7 @@ impl Default for Instance {
 	}
 }
 
+#[derive(Clone)]
 pub struct Camera {
 	pub pos: (f32, f32),
 	pub scale: f32,
@@ -83,34 +96,35 @@ impl Camera {
 		)
 	}
 
-	pub fn screen_to_world_pos(&self, (x, y): (f32, f32)) -> (f32, f32) {
-		(self.scale * x + self.pos.0, self.scale * y + self.pos.1)
+	pub fn screen_to_world_pos(&self, (x, y): (f32, f32), aspect: f32) -> (f32, f32) {
+		(
+			self.scale * x * aspect + self.pos.0,
+			self.scale * y + self.pos.1,
+		)
 	}
-}
-
-pub trait Renderable {
-	fn render(&mut self, text_map: &TextureMap, out: &mut Vec<Instance>, now: Instant);
 }
 
 #[derive(Clone)]
 pub struct Animation {
 	start: Instant,
 	text: Texture,
+	inst: Instance,
 	duration: f32,
 	repeat: Option<f32>, //None means repeat forever
 }
 
 impl Animation {
-	pub fn new(text: Texture, duration: f32, repeat: Option<f32>) -> Self {
+	pub fn new(context: &Context, texture: Texture, duration: f32, repeat: Option<f32>) -> Self {
 		Self {
 			start: Instant::now(),
-			text,
+			text: texture,
+			inst: context.get_inst(texture),
 			duration,
 			repeat,
 		}
 	}
 
-	pub fn get_frame(&self, text_map: &TextureMap, now: Instant) -> Instance {
+	pub fn get_frame(&self, now: Instant) -> Instance {
 		let elapsed = now.duration_since(self.start).as_secs_f32();
 		let frame_count = self.text.frame_count();
 
@@ -119,16 +133,16 @@ impl Animation {
 			_ => (frame_count as f32 * (elapsed / self.duration % 1.)) as u32,
 		};
 
-		text_map[&self.text].at_frame_n(frame, frame_count)
+		self.inst.at_frame_n(frame, frame_count)
+	}
+
+	pub fn reset(&mut self, duration: f32, repeat: Option<f32>) {
+		self.duration = duration;
+		self.repeat = repeat;
+		self.start = Instant::now()
 	}
 
 	pub fn restart(&mut self) {
 		self.start = Instant::now()
-	}
-}
-
-impl Renderable for Animation {
-	fn render(&mut self, text_map: &TextureMap, out: &mut Vec<Instance>, now: Instant) {
-		out.push(self.get_frame(text_map, now))
 	}
 }

@@ -7,7 +7,7 @@ pub fn load_textures() -> (image::RgbaImage, TextureMap) {
 	let mut rgba_images = Texture::iter()
 		.map(|text_name| {
 			let file_name = format!("assets/{}.png", <&'static str>::from(text_name));
-			image::open(file_name).unwrap().into_rgba8()
+			image::open(file_name).expect("Unable to open image texture asset.").into_rgba8()
 		})
 		.collect::<Vec<_>>();
 
@@ -52,11 +52,4 @@ pub fn load_textures() -> (image::RgbaImage, TextureMap) {
 	}
 
 	(spritesheet.0, map)
-}
-
-pub fn point_in_rect(point: (f32, f32), scale: (f32, f32), pos: (f32, f32)) -> bool {
-	let (x1, x2) = (pos.0 - scale.0, pos.0 + scale.0);
-	let (y1, y2) = (pos.1 - scale.1, pos.1 + scale.1);
-
-	x1 < point.0 && point.0 < x2 && y1 < point.1 && point.1 < y2
 }
