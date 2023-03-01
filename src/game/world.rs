@@ -1,4 +1,4 @@
-use super::{ship::*, Action, Camera, GameObject};
+use super::{ship::*, Action, GameObject};
 
 use crate::window::{Context, Instance};
 use std::time::Instant;
@@ -21,7 +21,7 @@ impl GameObject for World {
 		Action::Nothing
 	}
 
-	fn render(&mut self, context: &Context, view: &Camera, out: &mut Vec<Instance>, now: Instant) {
-		self.ship.render(context, view, out, now);
+	fn render(&mut self, context: &Context, out: &mut Vec<Instance>, now: Instant) {
+		self.ship.render(context, out, now);
 	}
 }

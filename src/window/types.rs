@@ -8,10 +8,31 @@ pub type TextureMap = fnv::FnvHashMap<Texture, Instance>;
 
 pub struct Context {
 	pub texture_map: TextureMap,
+	pub size: (u32, u32),
 	pub aspect: f32,
+	pub camera: Camera,
 }
 
 impl Context {
+	//World Coordinates of a position described relative to a corner.
+	//Useful for things with fixed position regardless of window dimensions.
+	//dx, dy is the position of the object relative to some corner. Interpreted
+	//such that it refers to a point inside the screen if |dx|,|dy| < 1
+	pub fn corner_relative_to_world(&self, pos: (f32, f32)) -> (f32, f32) {
+		self.screen_to_world_pos(self.corner_relative(pos))
+	}
+
+	pub fn screen_to_world_pos(&self, (x, y): (f32, f32)) -> (f32, f32) {
+		(
+			self.camera.scale * x * self.aspect + self.camera.pos.0,
+			self.camera.scale * y + self.camera.pos.1,
+		)
+	}
+
+	pub fn corner_relative(&self, (dx, dy): (f32, f32)) -> (f32, f32) {
+		(dx / self.aspect - dx.signum(), dy - dy.signum())
+	}
+
 	pub fn get_inst(&self, texture: Texture) -> Instance {
 		self.texture_map[&texture]
 	}
@@ -78,7 +99,7 @@ impl Default for Instance {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Camera {
 	pub pos: (f32, f32),
 	pub scale: f32,
@@ -93,13 +114,6 @@ impl Camera {
 			self.scale + self.pos.1,
 			-100.,
 			100.,
-		)
-	}
-
-	pub fn screen_to_world_pos(&self, (x, y): (f32, f32), aspect: f32) -> (f32, f32) {
-		(
-			self.scale * x * aspect + self.pos.0,
-			self.scale * y + self.pos.1,
 		)
 	}
 }

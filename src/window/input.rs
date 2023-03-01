@@ -1,7 +1,6 @@
 use super::*;
 
 pub struct Input {
-	pub size: (u32, u32),
 	pub scroll: f32,
 	pub mouse_pos: (f32, f32),
 	pub left_mouse: ui::MouseState,
@@ -24,10 +23,10 @@ impl Input {
 		self.right_mouse.update(self.right_mouse.is_down());
 	}
 
-	pub fn capture_mouse(&mut self, pos: &winit::dpi::PhysicalPosition<f64>) {
+	pub fn capture_mouse(&mut self, pos: &winit::dpi::PhysicalPosition<f64>, size: (u32, u32)) {
 		self.mouse_pos = (
-			2.0 * pos.x as f32 / self.size.0 as f32 - 1.0,
-			-2.0 * pos.y as f32 / self.size.1 as f32 + 1.0,
+			2.0 * pos.x as f32 / size.0 as f32 - 1.0,
+			-2.0 * pos.y as f32 / size.1 as f32 + 1.0,
 		);
 	}
 
