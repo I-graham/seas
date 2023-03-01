@@ -1,6 +1,6 @@
 use super::ui::Button;
 use crate::game::Action;
-use crate::window::{Animation, Camera, Context, Instance, Texture};
+use crate::window::{Animation, Context, Instance, Texture};
 use std::time::Instant;
 
 use super::GameObject;
@@ -18,7 +18,7 @@ impl Ship {
 				context,
 				false,
 				Texture::ReadyButton,
-				(-0.75, -0.75),
+				(-0.30, 0.30),
 				(0.25, 0.25),
 				Some(|c| *c = true),
 				Some(|c| *c = false),
@@ -36,8 +36,8 @@ impl GameObject for Ship {
 		Action::Nothing
 	}
 
-	fn render(&mut self, context: &Context, view: &Camera, out: &mut Vec<Instance>, now: Instant) {
+	fn render(&mut self, context: &Context, out: &mut Vec<Instance>, now: Instant) {
 		out.push(self.animation.get_frame(now));
-		self.button.render(context, view, out, now);
+		self.button.render(context, out, now);
 	}
 }

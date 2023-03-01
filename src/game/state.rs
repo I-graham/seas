@@ -1,6 +1,6 @@
 use super::world::World;
 use super::GameObject;
-use crate::window::{Camera, Instance, WinApi};
+use crate::window::{Instance, WinApi};
 use winit::event_loop::EventLoop;
 
 pub struct GameState {
@@ -22,15 +22,10 @@ impl GameState {
 		self.instances.clear();
 		self.api.clear();
 
-		let view = Camera {
-			pos: (0., 0.),
-			scale: 1.,
-		};
-
 		self.world
-			.render(&self.api.context, &view, &mut self.instances, now);
+			.render(&self.api.context,&mut self.instances, now);
 
-		self.api.draw(&view, &self.instances);
+		self.api.draw(self.api.context.camera, &self.instances);
 	}
 
 	pub(super) fn new(event_loop: &EventLoop<()>) -> Self {

@@ -3,7 +3,7 @@ mod state;
 mod ui;
 mod world;
 
-use crate::window::{Camera, Context, Input, Instance};
+use crate::window::{Context, Input, Instance};
 use std::time::Instant;
 use winit::event_loop::EventLoop;
 
@@ -20,7 +20,6 @@ pub trait GameObject {
 	fn render(
 		&mut self,
 		_context: &Context,
-		_view: &Camera,
 		_out: &mut Vec<Instance>,
 		_now: Instant,
 	) {
@@ -57,7 +56,9 @@ pub fn play() -> ! {
 				}
 
 				WindowEvent::CursorMoved { position, .. } => {
-					game.api.input.capture_mouse(&position)
+					game.api
+						.input
+						.capture_mouse(&position, game.api.context.size);
 				}
 
 				WindowEvent::MouseInput { button, state, .. } => game
