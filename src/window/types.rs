@@ -9,11 +9,24 @@ pub type TextureMap = fnv::FnvHashMap<Texture, Instance>;
 pub struct Context {
 	pub texture_map: TextureMap,
 	pub size: (u32, u32),
-	pub aspect: f32,
 	pub camera: Camera,
+	pub instances: Vec<Instance>,
 }
 
 impl Context {
+	pub fn emit(&mut self, instance: Instance) {
+        //clip unseen instances
+		
+        let (cx, cy) = self.camera.pos;
+        let rad = self.camera.scale * self.aspect().hypot(1.);
+        let GLvec2(ix, iy) = instance.translate;
+        let GLvec2(sx, sy) = instance.scale;
+
+        if (ix-cx).abs().hypot((iy-cy).abs()) < (rad + sx.hypot(sy)) {
+		    self.instances.push(instance);
+        }
+	}
+
 	//World Coordinates of a position described relative to a corner.
 	//Useful for things with fixed position regardless of window dimensions.
 	//dx, dy is the position of the object relative to some corner. Interpreted
@@ -24,31 +37,35 @@ impl Context {
 
 	pub fn screen_to_world_pos(&self, (x, y): (f32, f32)) -> (f32, f32) {
 		(
-			self.camera.scale * x * self.aspect + self.camera.pos.0,
+			self.camera.scale * x * self.aspect() + self.camera.pos.0,
 			self.camera.scale * y + self.camera.pos.1,
 		)
 	}
 
 	pub fn corner_relative(&self, (dx, dy): (f32, f32)) -> (f32, f32) {
-		(dx / self.aspect - dx.signum(), dy - dy.signum())
+		(dx / self.aspect() - dx.signum(), dy - dy.signum())
 	}
 
 	pub fn get_inst(&self, texture: Texture) -> Instance {
 		self.texture_map[&texture]
+	}
+
+	pub fn aspect(&self) -> f32 {
+		self.size.0 as f32 / self.size.1 as f32
 	}
 }
 
 #[derive(IntoStaticStr, EnumIter, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum Texture {
 	Flat,
-	ShipSheet,
 	ReadyButton,
+	Water,
 }
 
 impl Texture {
 	pub fn frame_count(&self) -> u32 {
 		match self {
-			Self::ShipSheet => 7,
+			Self::Water => 32,
 			_ => 1,
 		}
 	}
@@ -119,16 +136,23 @@ impl Camera {
 }
 
 #[derive(Clone)]
+pub enum PlayMode {
+	Repeat(f32),
+	Functional(fn(f32) -> f32),
+	Forever,
+}
+
+#[derive(Clone)]
 pub struct Animation {
 	start: Instant,
 	text: Texture,
 	inst: Instance,
 	duration: f32,
-	repeat: Option<f32>, //None means repeat forever
+	repeat: PlayMode, //None means repeat forever
 }
 
 impl Animation {
-	pub fn new(context: &Context, texture: Texture, duration: f32, repeat: Option<f32>) -> Self {
+	pub fn new(context: &Context, texture: Texture, duration: f32, repeat: PlayMode) -> Self {
 		Self {
 			start: Instant::now(),
 			text: texture,
@@ -140,20 +164,17 @@ impl Animation {
 
 	pub fn get_frame(&self, now: Instant) -> Instance {
 		let elapsed = now.duration_since(self.start).as_secs_f32();
-		let frame_count = self.text.frame_count();
+		let frames = self.text.frame_count();
+
+		let proportion = elapsed / self.duration;
 
 		let frame = match self.repeat {
-			Some(reps) if elapsed > reps * self.duration => frame_count - 1,
-			_ => (frame_count as f32 * (elapsed / self.duration % 1.)) as u32,
+			PlayMode::Repeat(reps) if proportion > reps => frames - 1,
+			PlayMode::Functional(f) => (frames as f32 * f(proportion % 1.)) as u32,
+			_ => (frames as f32 * (proportion % 1.)) as u32,
 		};
 
-		self.inst.at_frame_n(frame, frame_count)
-	}
-
-	pub fn reset(&mut self, duration: f32, repeat: Option<f32>) {
-		self.duration = duration;
-		self.repeat = repeat;
-		self.start = Instant::now()
+		self.inst.at_frame_n(frame, frames)
 	}
 
 	pub fn restart(&mut self) {
