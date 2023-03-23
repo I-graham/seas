@@ -1,5 +1,6 @@
 use super::GameObject;
-use crate::window::{glsl::*, Animation, Context, Instance, PlayMode, Texture};
+use crate::window::{glsl::*, Animation, Context, Instance, Texture};
+use std::time::Instant;
 
 pub struct Map {
 	pub size: u32,
@@ -12,26 +13,26 @@ impl Map {
 			size,
 			tile: Animation::new(
 				context,
-				Texture::Water,
-				4.0,
-				PlayMode::Forever,
+				Texture::Wave,
+				2.0,
+				Animation::SIN,
+				None,
 			),
 		}
 	}
 }
 
 impl GameObject for Map {
-	fn render(&mut self, context: &mut Context, now: std::time::Instant) {
-		let lim = self.size as i32 / 2;
-		for i in -lim..lim {
-			for j in -lim..lim {
-				const SCALE: f32 = 0.25;
-				let (x, y) = (i as f32 * SCALE, j as f32 * SCALE);
-				context.emit(Instance {
-					translate: GLvec2(2. * x, 2. * y),
-					..self.tile.get_frame(now).scaled(SCALE)
-				});
-			}
-		}
+	fn render(&self, context: &Context, out: &mut Vec<Instance>, now: Instant) {
+		context.emit(
+			out,
+			Instance {
+				color_tint: GLvec4::rgba(99, 155, 255, 255),
+				scale: GLvec2((self.size / 2) as f32, (self.size / 2) as f32),
+				..context.instance(Texture::Flat)
+			},
+		);
+
+		context.emit(out, self.tile.frame(now));
 	}
 }

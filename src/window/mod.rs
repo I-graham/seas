@@ -6,7 +6,7 @@ mod types;
 pub mod ui;
 
 pub use input::*;
-pub use types::{Animation, PlayMode, Camera, Context, Instance, Texture, TextureMap};
+pub use types::{Animation, Camera, Context, Instance, Texture, TextureMap};
 pub use ui::*;
 pub use glsl::*;
 use std::time::Instant;
@@ -20,8 +20,9 @@ pub struct WinApi {
     pub window: winit::window::Window,
     pub input: Input,
     pub context: Context,
+    pub output: Vec<Instance>,
     renderer: reng::Renderer<glsl::Uniform, Instance>,
-    epoch: Instant, 
+    epoch: Instant,
 }
 
 impl WinApi {
@@ -56,24 +57,25 @@ impl WinApi {
                     scale: 1.,
                 },
                 size: (size.width, size.height),
-                instances: vec![],
             },
+            output: vec![],
             epoch: Instant::now(),
         }
     }
 
     pub fn clear(&mut self) {
         //Red for debugging purposes.
-        self.context.instances.clear();
+        self.output.clear();
         self.renderer.clear(wgpu::Color::RED);
     }
 
     pub fn draw(&mut self) {
         self.renderer.set_uniform(glsl::Uniform {
-            ortho: self.context.camera.proj(self.context.aspect()),
+            ortho: self.context.camera.proj(),
+            aspect: self.context.aspect(),
 			time: Instant::now().duration_since(self.epoch).as_secs_f32(),
         });
-        self.renderer.draw(&self.context.instances);
+        self.renderer.draw(&self.output);
     }
 
     pub fn submit(&mut self) {

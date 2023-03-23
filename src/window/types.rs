@@ -10,43 +10,32 @@ pub struct Context {
 	pub texture_map: TextureMap,
 	pub size: (u32, u32),
 	pub camera: Camera,
-	pub instances: Vec<Instance>,
 }
 
 impl Context {
-	pub fn emit(&mut self, instance: Instance) {
-        //clip unseen instances
-		
-        let (cx, cy) = self.camera.pos;
-        let rad = self.camera.scale * self.aspect().hypot(1.);
-        let GLvec2(ix, iy) = instance.translate;
-        let GLvec2(sx, sy) = instance.scale;
+	pub fn visible(&self, instance: Instance) -> bool {
+		let (cx, cy) = self.camera.pos;
+		let GLvec2(px, py) = instance.position;
+		let GLvec2(sx, sy) = instance.scale;
 
-        if (ix-cx).abs().hypot((iy-cy).abs()) < (rad + sx.hypot(sy)) {
-		    self.instances.push(instance);
-        }
+		let rad = self.camera.scale * self.aspect().hypot(1.);
+
+		instance.screen_relative == GLbool::True
+			|| (px - cx * self.aspect()).hypot(py - cy) < rad + sx.hypot(sy)
 	}
 
-	//World Coordinates of a position described relative to a corner.
-	//Useful for things with fixed position regardless of window dimensions.
-	//dx, dy is the position of the object relative to some corner. Interpreted
-	//such that it refers to a point inside the screen if |dx|,|dy| < 1
-	pub fn corner_relative_to_world(&self, pos: (f32, f32)) -> (f32, f32) {
-		self.screen_to_world_pos(self.corner_relative(pos))
-	}
-
-	pub fn screen_to_world_pos(&self, (x, y): (f32, f32)) -> (f32, f32) {
-		(
-			self.camera.scale * x * self.aspect() + self.camera.pos.0,
-			self.camera.scale * y + self.camera.pos.1,
-		)
+	pub fn emit(&self, out: &mut Vec<Instance>, instance: Instance) {
+		//clip unseen instances
+		if self.visible(instance) {
+			out.push(instance);
+		}
 	}
 
 	pub fn corner_relative(&self, (dx, dy): (f32, f32)) -> (f32, f32) {
 		(dx / self.aspect() - dx.signum(), dy - dy.signum())
 	}
 
-	pub fn get_inst(&self, texture: Texture) -> Instance {
+	pub fn instance(&self, texture: Texture) -> Instance {
 		self.texture_map[&texture]
 	}
 
@@ -59,13 +48,14 @@ impl Context {
 pub enum Texture {
 	Flat,
 	ReadyButton,
-	Water,
+	Wave,
+	Wood,
 }
 
 impl Texture {
 	pub fn frame_count(&self) -> u32 {
 		match self {
-			Self::Water => 32,
+			Self::Wave => 27,
 			_ => 1,
 		}
 	}
@@ -77,12 +67,13 @@ pub struct Instance {
 	pub color_tint: GLvec4,
 	pub texture: GLvec4,
 	pub scale: GLvec2,
-	pub translate: GLvec2,
+	pub position: GLvec2,
 	pub rotation: GLfloat,
+	pub screen_relative: GLbool,
 }
 
 impl Instance {
-	pub fn scaled(self, r: f32) -> Self {
+	pub fn scale(self, r: f32) -> Self {
 		Self {
 			scale: GLvec2(r * self.scale.0, r * self.scale.1),
 			..self
@@ -110,8 +101,9 @@ impl Default for Instance {
 			color_tint: GLvec4(1.0, 1.0, 1.0, 1.0),
 			texture: GLvec4(0.0, 0.0, 1.0, 1.0),
 			scale: GLvec2(1.0, 1.0),
-			translate: GLvec2(0.0, 0.0),
+			position: GLvec2(0.0, 0.0),
 			rotation: GLfloat(0.0),
+			screen_relative: GLbool::False,
 		}
 	}
 }
@@ -123,10 +115,10 @@ pub struct Camera {
 }
 
 impl Camera {
-	pub fn proj(&self, aspect: f32) -> cgmath::Matrix4<f32> {
+	pub fn proj(&self) -> cgmath::Matrix4<f32> {
 		cgmath::ortho(
-			-aspect * self.scale + self.pos.0,
-			aspect * self.scale + self.pos.0,
+			-self.scale + self.pos.0,
+			self.scale + self.pos.0,
 			-self.scale + self.pos.1,
 			self.scale + self.pos.1,
 			-100.,
@@ -135,12 +127,7 @@ impl Camera {
 	}
 }
 
-#[derive(Clone)]
-pub enum PlayMode {
-	Repeat(f32),
-	Functional(fn(f32) -> f32),
-	Forever,
-}
+type Curve = fn(f32) -> f32;
 
 #[derive(Clone)]
 pub struct Animation {
@@ -148,31 +135,43 @@ pub struct Animation {
 	text: Texture,
 	inst: Instance,
 	duration: f32,
-	repeat: PlayMode, //None means repeat forever
+	curve: Curve,
+	repeat: Option<f32>, //None means repeat forever
 }
 
+use std::f32::consts::*;
 impl Animation {
-	pub fn new(context: &Context, texture: Texture, duration: f32, repeat: PlayMode) -> Self {
+	pub const LINEAR: Curve = |f| f;
+
+	pub const SIN: Curve = |f| (1. - (f * PI).cos()) / 2.;
+	pub const SIN_BOUNCE: Curve = |f| Self::SIN(2. * f);
+
+	pub fn new(
+		context: &Context,
+		texture: Texture,
+		duration: f32,
+		curve: fn(f32) -> f32,
+		repeat: Option<f32>,
+	) -> Self {
 		Self {
 			start: Instant::now(),
 			text: texture,
-			inst: context.get_inst(texture),
+			inst: context.instance(texture),
 			duration,
+			curve,
 			repeat,
 		}
 	}
 
-	pub fn get_frame(&self, now: Instant) -> Instance {
+	pub fn frame(&self, now: Instant) -> Instance {
 		let elapsed = now.duration_since(self.start).as_secs_f32();
 		let frames = self.text.frame_count();
 
-		let proportion = elapsed / self.duration;
+		let reps = elapsed / self.duration;
 
-		let frame = match self.repeat {
-			PlayMode::Repeat(reps) if proportion > reps => frames - 1,
-			PlayMode::Functional(f) => (frames as f32 * f(proportion % 1.)) as u32,
-			_ => (frames as f32 * (proportion % 1.)) as u32,
-		};
+		let proportion = self.repeat.unwrap_or(reps).min(reps);
+
+		let frame = (frames as f32 * (self.curve)(proportion % 1.)) as u32;
 
 		self.inst.at_frame_n(frame, frames)
 	}

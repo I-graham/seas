@@ -1,29 +1,26 @@
-use super::{map::*, ship::*, Action, GameObject};
+use super::{map::*, Action, GameObject, Instance};
 
 use crate::window::Context;
 use std::time::Instant;
 
 pub(super) struct World {
 	map: Map,
-	ship: Ship,
 }
 
 impl World {
 	pub fn new(context: &Context) -> Self {
 		Self {
-			map: Map::new(context, 100),
-			ship: Ship::new(context),
+			map: Map::new(context, 50),
 		}
 	}
 }
 
 impl GameObject for World {
-	fn update(&mut self, input: &crate::window::Input) -> super::Action {
-		self.ship.update(input);
+	fn update(&mut self, _context: &Context, _input: &crate::window::Input) -> super::Action {
 		Action::Nothing
 	}
 
-	fn render(&mut self, context: &mut Context, now: Instant) {
-		self.map.render(context, now);
+	fn render(&self, context: &Context, out: &mut Vec<Instance>, now: Instant) {
+		self.map.render(context, out, now);
 	}
 }

@@ -1,6 +1,6 @@
 use super::world::World;
 use super::GameObject;
-use crate::window::{WinApi};
+use crate::window::WinApi;
 use winit::event::VirtualKeyCode;
 use winit::event_loop::EventLoop;
 
@@ -11,7 +11,7 @@ pub struct GameState {
 
 impl GameState {
 	pub(super) fn update(&mut self) {
-		self.world.update(&self.api.input);
+		self.world.update(&self.api.context, &self.api.input);
 
 		self.api.input.update_mouse();
 
@@ -33,7 +33,8 @@ impl GameState {
 
 		self.api.clear();
 
-		self.world.render(&mut self.api.context, now);
+		self.world
+			.render(&self.api.context, &mut self.api.output, now);
 
 		self.api.draw();
 	}

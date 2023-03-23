@@ -1,43 +1,22 @@
-use super::ui::Button;
-use crate::game::Action;
-use crate::window::{Animation, PlayMode, Context, Texture};
+use crate::window::{Animation, Context, Instance, Texture};
 use std::time::Instant;
 
 use super::GameObject;
 
 pub struct Ship {
-    animation: Animation,
-    button: Button<bool>,
+	tile: Animation,
 }
 
 impl Ship {
-    pub fn new(context: &Context) -> Self {
-        Self {
-            animation: Animation::new(context, Texture::Water, 3.0, PlayMode::Forever),
-            button: Button::new(
-                context,
-                false,
-                Texture::ReadyButton,
-                (-0.30, 0.30),
-                (0.25, 0.25),
-                Some(|c| *c = true),
-                Some(|c| *c = false),
-            ),
-        }
-    }
+	pub fn new(context: &Context) -> Self {
+		Self {
+			tile: Animation::new(context, Texture::Flat, 3.0, Animation::LINEAR, Some(1.0)),
+		}
+	}
 }
 
 impl GameObject for Ship {
-    fn update(&mut self, input: &crate::window::Input) -> Action {
-        self.button.update(input);
-        if self.button.state {
-            self.animation.restart();
-        }
-        Action::Nothing
-    }
-
-    fn render(&mut self, context: &mut Context, now: Instant) {
-        context.emit(self.animation.get_frame(now));
-        self.button.render(context, now);
-    }
+	fn render(&self, context: &Context, out: &mut Vec<Instance>, now: Instant) {
+		context.emit(out, self.tile.frame(now));
+	}
 }

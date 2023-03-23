@@ -1,10 +1,10 @@
+mod map;
 mod ship;
 mod state;
 mod ui;
 mod world;
-mod map;
 
-use crate::window::{Context, Input};
+use crate::window::{Context, Input, Instance};
 use std::time::Instant;
 use winit::event_loop::EventLoop;
 
@@ -13,11 +13,11 @@ pub enum Action {
 }
 
 pub trait GameObject {
-	fn update(&mut self, _input: &Input) -> Action {
+	fn update(&mut self, _context: &Context, _input: &Input) -> Action {
 		Action::Nothing
 	}
 
-	fn render(&mut self, _context: &mut Context, _now: Instant) {}
+	fn render(&self, _context: &Context, _out: &mut Vec<Instance>, _now: Instant) {}
 }
 
 pub fn play() -> ! {
@@ -30,7 +30,7 @@ pub fn play() -> ! {
 	let mut prev = std::time::Instant::now();
 	#[cfg(debug_assertions)]
 	let mut count = 0;
-	
+
 	event_loop.run(move |event, _, flow| {
 		flow.set_poll();
 		match event {
@@ -69,19 +69,17 @@ pub fn play() -> ! {
 			},
 
 			Event::MainEventsCleared => {
-
 				#[cfg(debug_assertions)]
 				{
 					count += 1;
 					let now = std::time::Instant::now();
 					let time = now.duration_since(prev).as_secs_f64();
 					if time > 1. {
-						dbg!(count as f64 / time);
+						println!("fps: {}", count);
 						prev = now;
 						count = 0;
 					}
 				}
-				
 
 				game.update();
 				game.draw();
