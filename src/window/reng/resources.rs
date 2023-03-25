@@ -47,7 +47,7 @@ impl<UniformType, InstanceType> RenderResources2D<UniformType, InstanceType> {
 
 		let surface_conf = wgpu::SurfaceConfiguration {
 			usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-			format: dbg!(surf_fmt),
+			format: surf_fmt,
 			width: win_size.width,
 			height: win_size.height,
 			present_mode: surf_caps.present_modes[0],

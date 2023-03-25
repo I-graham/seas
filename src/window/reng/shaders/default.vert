@@ -3,7 +3,6 @@
 layout(set=0, binding=0, std140)
 uniform Uniforms{
 	mat4 ortho;
-	float aspect;
 	float time;
 };
 
@@ -60,7 +59,7 @@ void main() {
 	text_coords = inst_coords[index];
 	color_tint  = inst.tint;
 
-	gl_Position = vec4(pos.x / aspect, pos.y, 0.0, 1.0);
+	gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);
 	if (inst.screen_relative == 0) {
 		gl_Position = ortho * gl_Position;
 	}

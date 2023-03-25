@@ -15,4 +15,7 @@ layout(set = 2, binding = 1) uniform sampler samp;
 
 void main() {
 	out_color = texture(sampler2D(text, samp), text_coords) * pow(color_tint, vec4(2.2));
+	if (out_color.a == 0.0) {
+		discard;
+	}
 }

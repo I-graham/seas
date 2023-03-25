@@ -1,5 +1,11 @@
 use crate::game::*;
-use crate::window::{glsl::*, Context, Instance, MouseState, Texture};
+use crate::window::{glsl::*, External, Instance, MouseState, Texture};
+use std::cell::Cell;
+
+enum ButtonPlan {
+	Click,
+	Release,
+}
 
 pub struct Button<T> {
 	pub state: T,
@@ -8,11 +14,12 @@ pub struct Button<T> {
 	pub size: (f32, f32), //Relative to screen
 	pub on_click: Option<fn(&mut T)>,
 	pub on_release: Option<fn(&mut T)>,
+	plan: Cell<Option<ButtonPlan>>,
 }
 
 impl<T> Button<T> {
 	pub fn new(
-		_context: &Context,
+		_context: &External,
 		state: T,
 		texture: Texture,
 		pos: (f32, f32),
@@ -27,6 +34,7 @@ impl<T> Button<T> {
 			size,
 			on_click,
 			on_release,
+			plan: Cell::new(None),
 		}
 	}
 
@@ -36,25 +44,34 @@ impl<T> Button<T> {
 }
 
 impl<T> GameObject for Button<T> {
-	fn update(&mut self, _context: &Context, input: &Input) -> Action {
-		match input.left_mouse {
-			MouseState::Click if self.includes(input.mouse_pos) => {
-				if let Some(listener) = self.on_click {
-					listener(&mut self.state)
-				}
-			}
-			MouseState::Release if self.includes(input.mouse_pos) => {
-				if let Some(listener) = self.on_release {
-					listener(&mut self.state)
-				}
-			}
-			_ => {}
-		}
-
-		Action::Nothing
+	fn plan(&self, _world: &World, _context: &External, input: &Input) {
+		self.plan.set(match input.left_mouse {
+			MouseState::Click if self.includes(input.mouse_pos) => Some(ButtonPlan::Click),
+			MouseState::Release if self.includes(input.mouse_pos) => Some(ButtonPlan::Release),
+			_ => None,
+		})
 	}
 
-	fn render(&self, context: &Context, out: &mut Vec<Instance>, _now: std::time::Instant) {
+	fn update(&mut self, _external: &External) -> Option<Action> {
+		if let Some(plan) = self.plan.take() {
+			match plan {
+				ButtonPlan::Click => {
+					if let Some(listener) = self.on_click {
+						listener(&mut self.state)
+					}
+				}
+				ButtonPlan::Release => {
+					if let Some(listener) = self.on_release {
+						listener(&mut self.state)
+					}
+				}
+			}
+		}
+
+		None
+	}
+
+	fn render(&self, context: &External, out: &mut Vec<Instance>) {
 		context.emit(
 			out,
 			Instance {

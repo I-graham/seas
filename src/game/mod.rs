@@ -1,23 +1,27 @@
 mod map;
-mod ship;
 mod state;
 mod ui;
+mod utils;
 mod world;
 
-use crate::window::{Context, Input, Instance};
-use std::time::Instant;
+use crate::window::{External, Input, Instance};
+pub use utils::*;
 use winit::event_loop::EventLoop;
-
-pub enum Action {
-	Nothing,
-}
+use world::World;
 
 pub trait GameObject {
-	fn update(&mut self, _context: &Context, _input: &Input) -> Action {
-		Action::Nothing
+	fn plan(&self, _world: &World, _external: &External, _input: &Input) {}
+
+	fn update(&mut self, _external: &External) -> Option<Action> {
+		None
 	}
 
-	fn render(&self, _context: &Context, _out: &mut Vec<Instance>, _now: Instant) {}
+	fn render(&self, _context: &External, _out: &mut Vec<Instance>) {}
+}
+
+#[derive(Clone, PartialEq)]
+pub enum Action {
+	Die,
 }
 
 pub fn play() -> ! {
@@ -26,9 +30,7 @@ pub fn play() -> ! {
 	let event_loop = EventLoop::new();
 	let mut game = state::GameState::new(&event_loop);
 
-	#[cfg(debug_assertions)]
 	let mut prev = std::time::Instant::now();
-	#[cfg(debug_assertions)]
 	let mut count = 0;
 
 	event_loop.run(move |event, _, flow| {
@@ -57,7 +59,7 @@ pub fn play() -> ! {
 				WindowEvent::CursorMoved { position, .. } => {
 					game.api
 						.input
-						.capture_mouse(&position, game.api.context.size);
+						.capture_mouse(&position, game.api.external.size);
 				}
 
 				WindowEvent::MouseInput { button, state, .. } => game
@@ -69,7 +71,6 @@ pub fn play() -> ! {
 			},
 
 			Event::MainEventsCleared => {
-				#[cfg(debug_assertions)]
 				{
 					count += 1;
 					let now = std::time::Instant::now();
@@ -81,7 +82,7 @@ pub fn play() -> ! {
 					}
 				}
 
-				game.update();
+				game.step();
 				game.draw();
 				game.api.submit();
 			}

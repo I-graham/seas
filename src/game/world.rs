@@ -1,26 +1,27 @@
-use super::{map::*, Action, GameObject, Instance};
+use super::{map::*, GameObject, Instance};
 
-use crate::window::Context;
-use std::time::Instant;
+use crate::window::External;
 
-pub(super) struct World {
+pub struct World {
 	map: Map,
 }
 
+const MAP_SIZE: u32 = 500;
 impl World {
-	pub fn new(context: &Context) -> Self {
+	pub fn new() -> Self {
 		Self {
-			map: Map::new(context, 50),
+			map: Map::new(MAP_SIZE),
 		}
 	}
 }
 
 impl GameObject for World {
-	fn update(&mut self, _context: &Context, _input: &crate::window::Input) -> super::Action {
-		Action::Nothing
+	fn update(&mut self, external: &External) -> Option<super::Action> {
+		self.map.update(external);
+		None
 	}
 
-	fn render(&self, context: &Context, out: &mut Vec<Instance>, now: Instant) {
-		self.map.render(context, out, now);
+	fn render(&self, external: &External, out: &mut Vec<Instance>) {
+		self.map.render(external, out);
 	}
 }
