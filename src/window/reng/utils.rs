@@ -21,7 +21,7 @@ type Dimens = (u32, u32);
 
 pub fn create_spritesheet(
 	mut images: Vec<image::RgbaImage>,
-) -> (image::RgbaImage, Vec<(Coords, Dimens)>) {
+) -> (image::RgbaImage, Vec<(bool, Coords, Dimens)>) {
 	use image::GenericImage;
 	use image::GenericImageView;
 	let mut dyn_image = image::DynamicImage::new_rgba8(1, 1);
@@ -108,14 +108,14 @@ pub fn create_spritesheet(
 				corner.0 + flipped.dimensions().0,
 				corner.1 + flipped.dimensions().1,
 			);
-			final_coords.push(((dims.0, corner.1), (corner.0, dims.1)));
+			final_coords.push((true, (dims.0, corner.1), (corner.0, dims.1)));
 		} else {
 			dyn_image.copy_from(image, corner.0, corner.1).unwrap();
 			dims = (
 				corner.0 + image.dimensions().0,
 				corner.1 + image.dimensions().1,
 			);
-			final_coords.push((corner, dims));
+			final_coords.push((false, corner, dims));
 		}
 
 		placed_images.push((corner, dims));

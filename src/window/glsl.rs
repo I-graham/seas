@@ -2,7 +2,6 @@
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Uniform {
     pub ortho: cgmath::Matrix4<f32>,
-    pub time: f32, 
 }
 
 #[repr(transparent)]

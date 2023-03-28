@@ -165,7 +165,7 @@ impl<UniformType, InstanceType> RenderResources2D<UniformType, InstanceType> {
 				primitive: wgpu::PrimitiveState {
 					topology: wgpu::PrimitiveTopology::TriangleStrip,
 					front_face: wgpu::FrontFace::default(),
-					cull_mode: Some(wgpu::Face::Back),
+					cull_mode: None,
 					unclipped_depth: false,
 					polygon_mode: wgpu::PolygonMode::Fill,
 					conservative: false,

@@ -1,9 +1,12 @@
 mod map;
 mod state;
 mod ui;
+mod fsm;
 mod utils;
 mod world;
+mod messenger;
 
+pub use fsm::*;
 use crate::window::{External, Input, Instance};
 pub use utils::*;
 use winit::event_loop::EventLoop;
@@ -31,7 +34,7 @@ pub fn play() -> ! {
 	let mut game = state::GameState::new(&event_loop);
 
 	let mut prev = std::time::Instant::now();
-	let mut count = 0;
+	let mut frame_counter = 0;
 
 	event_loop.run(move |event, _, flow| {
 		flow.set_poll();
@@ -72,13 +75,13 @@ pub fn play() -> ! {
 
 			Event::MainEventsCleared => {
 				{
-					count += 1;
-					let now = std::time::Instant::now();
+					frame_counter += 1;
+					let now = game.api.external.now;
 					let time = now.duration_since(prev).as_secs_f64();
 					if time > 1. {
-						println!("fps: {}", count);
+						println!("fps: {}", frame_counter);
 						prev = now;
-						count = 0;
+						frame_counter = 0;
 					}
 				}
 

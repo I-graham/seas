@@ -8,7 +8,8 @@ pub mod ui;
 pub use glsl::*;
 pub use input::*;
 use std::time::Instant;
-pub use types::{Animation, Camera, External, Instance, Texture, TextureMap};
+
+pub use types::{Camera, Animation, External, Instance, Texture, TextureMap};
 pub use ui::*;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
@@ -22,7 +23,6 @@ pub struct WinApi {
 	pub external: External,
 	pub output: Vec<Instance>,
 	renderer: reng::Renderer<glsl::Uniform, Instance>,
-	epoch: Instant,
 }
 
 impl WinApi {
@@ -57,11 +57,10 @@ impl WinApi {
 					scale: 1.,
 				},
 				size: (size.width, size.height),
-				now: Instant::now(),
+				now : Instant::now(),
 				delta: 0.,
 			},
 			output: vec![],
-			epoch: Instant::now(),
 		}
 	}
 
@@ -74,7 +73,6 @@ impl WinApi {
 	pub fn draw(&mut self) {
 		self.renderer.set_uniform(glsl::Uniform {
 			ortho: self.external.camera.proj(self.external.aspect()),
-			time: Instant::now().duration_since(self.epoch).as_secs_f32(),
 		});
 		self.renderer.draw(&self.output);
 	}

@@ -7,7 +7,6 @@ layout(location=0) out vec4 out_color;
 layout(set=0, binding=0, std140)
 uniform Uniforms{
 	mat4 ortho;
-	float time;
 };
 
 layout(set = 2, binding = 0) uniform texture2D text;

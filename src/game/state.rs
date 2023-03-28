@@ -1,5 +1,5 @@
 use super::world::World;
-use super::{GameObject};
+use super::GameObject;
 use crate::window::WinApi;
 use winit::event::VirtualKeyCode;
 use winit::event_loop::EventLoop;
@@ -27,15 +27,20 @@ impl GameState {
 
 		self.api.input.update_mouse();
 
-		self.api.external.camera.pos.0 += 0.05
+		const CAM_SPEED: f32 = 35.0;
+		self.api.external.camera.pos.0 += CAM_SPEED
+			* self.api.external.delta
 			* (self.api.input.key(VirtualKeyCode::D) as i32
 				- self.api.input.key(VirtualKeyCode::A) as i32) as f32;
 
-		self.api.external.camera.pos.1 += 0.05
+		self.api.external.camera.pos.1 += CAM_SPEED
+			* self.api.external.delta
 			* (self.api.input.key(VirtualKeyCode::W) as i32
 				- self.api.input.key(VirtualKeyCode::S) as i32) as f32;
 
-		self.api.external.camera.scale += 0.05
+		const SCALE_SPEED : f32 = 20.;
+		self.api.external.camera.scale += SCALE_SPEED
+			* self.api.external.delta
 			* (self.api.input.key(VirtualKeyCode::Q) as i32
 				- self.api.input.key(VirtualKeyCode::Z) as i32) as f32;
 	}
@@ -43,8 +48,7 @@ impl GameState {
 	pub(super) fn draw(&mut self) {
 		self.api.clear();
 
-		self.world
-			.render(&self.api.external, &mut self.api.output);
+		self.world.render(&self.api.external, &mut self.api.output);
 
 		self.api.draw();
 	}

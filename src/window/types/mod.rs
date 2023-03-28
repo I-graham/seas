@@ -1,8 +1,12 @@
+mod animation;
+
 use super::glsl::*;
 
 use std::hash::Hash;
 use std::time::Instant;
 use strum_macros::{EnumIter, IntoStaticStr};
+
+pub use animation::{Animation};
 
 pub type TextureMap = fnv::FnvHashMap<Texture, Instance>;
 
@@ -22,7 +26,7 @@ impl External {
 	}
 
 	pub fn view_dims(&self) -> (f32, f32) {
-		let k = self.camera.scale;
+		let k = 2. * self.camera.scale;
 
 		(k * self.aspect(), k)
 	}
@@ -41,7 +45,7 @@ impl External {
 			|| ((px - cx).abs() < max + dx && (py - cy).abs() < max + dy)
 	}
 
-	pub fn emit(&self, out: &mut Vec<Instance>, instance: Instance) {
+	pub fn clip(&self, out: &mut Vec<Instance>, instance: Instance) {
 		//clip unseen instances
 		if self.visible(instance) {
 			out.push(instance);
@@ -66,12 +70,16 @@ pub enum Texture {
 	Flat,
 	Wave,
 	Wood,
+	Puffin,
+	PuffinPeck,
+	PuffinFlip,
 }
 
 impl Texture {
 	pub fn frame_count(&self) -> u32 {
 		match self {
 			Self::Wave => 27,
+			Self::PuffinPeck => 4,
 			_ => 1,
 		}
 	}
@@ -132,73 +140,12 @@ pub struct Camera {
 impl Camera {
 	pub fn proj(&self, aspect: f32) -> cgmath::Matrix4<f32> {
 		cgmath::ortho(
-			-aspect * self.scale + self.pos.0,
-			aspect * self.scale + self.pos.0,
-			-self.scale + self.pos.1,
-			self.scale + self.pos.1,
+			self.pos.0 - aspect * self.scale,
+			self.pos.0 + aspect * self.scale,
+			self.pos.1 - self.scale,
+			self.pos.1 + self.scale,
 			-100.,
 			100.,
 		)
-	}
-}
-
-type Curve = fn(f32) -> f32;
-
-#[derive(Clone)]
-pub struct Animation {
-	start: Instant,
-	texture: Texture,
-	duration: f32,
-	curve: Curve,
-	repeat: Option<f32>, //None means repeat forever
-}
-
-use std::f32::consts::*;
-impl Animation {
-	pub const LINEAR: Curve = |f| f;
-
-	pub const SIN: Curve = |f| (1. - (f * PI).cos()) / 2.;
-	pub const SIN_BOUNCE: Curve = |f| Self::SIN(2. * f);
-
-	pub fn new(
-		texture: Texture,
-		duration: f32,
-		curve: fn(f32) -> f32,
-		repeat: Option<f32>,
-	) -> Self {
-		Self {
-			start: Instant::now(),
-			texture,
-			duration,
-			curve,
-			repeat,
-		}
-	}
-
-	pub fn frame(&self, context: &External) -> Instance {
-		let elapsed = self.age(context.now);
-		let frames = self.texture.frame_count();
-
-		let reps = elapsed / self.duration;
-
-		let proportion = self.repeat.unwrap_or(reps).min(reps);
-
-		let frame = (frames as f32 * (self.curve)(proportion % 1.)) as u32;
-
-		context
-			.instance(self.texture)
-			.nth_frame(frame.min(frames - 1), frames)
-	}
-
-	pub fn finished(&self, now: Instant) -> bool {
-		matches!(self.repeat, Some(reps) if self.age(now) > reps * self.duration)
-	}
-
-	pub fn age(&self, now: Instant) -> f32 {
-		now.duration_since(self.start).as_secs_f32()
-	}
-
-	pub fn restart(&mut self) {
-		self.start = Instant::now()
 	}
 }

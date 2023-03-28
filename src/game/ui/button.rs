@@ -72,7 +72,7 @@ impl<T> GameObject for Button<T> {
 	}
 
 	fn render(&self, context: &External, out: &mut Vec<Instance>) {
-		context.emit(
+		context.clip(
 			out,
 			Instance {
 				position: self.pos.into(),

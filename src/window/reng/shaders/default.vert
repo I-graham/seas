@@ -3,7 +3,6 @@
 layout(set=0, binding=0, std140)
 uniform Uniforms{
 	mat4 ortho;
-	float time;
 };
 
 struct Instance {
