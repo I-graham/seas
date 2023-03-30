@@ -54,7 +54,7 @@ impl WinApi {
 				texture_map,
 				camera: Camera {
 					pos: (0., 0.),
-					scale: 1.,
+					scale: 32.,
 				},
 				size: (size.width, size.height),
 				now : Instant::now(),

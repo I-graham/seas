@@ -51,7 +51,7 @@ void main() {
 
 	int index = gl_VertexIndex % 4;
 
-	vec2 coord = positions[index];
+	vec2 coord = positions[index] / 2.;
 
     vec2 pos = rotv2(coord, inst.rotation) * inst.scale + inst.translate;
 		

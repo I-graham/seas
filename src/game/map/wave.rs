@@ -1,5 +1,5 @@
 use super::*;
-use crate::{game::rand_in, window::Animation};
+use crate::{game::*, window::Animation};
 
 pub struct Wave {
 	pos: (f32, f32),
@@ -30,12 +30,12 @@ impl Wave {
 	pub fn maybe_spawn(external: &External) -> Option<Self> {
 		let (px, py) = external.camera.pos;
 
-		const WAVE_DENSITY: f32 = 1. / 500.;
+		const WAVE_DENSITY: f32 = 1. / 20_000.;
 		let (dw, dh) = external.view_dims();
 		let (vw, vh) = (dw / 2., dh / 2.);
-		if random() < WAVE_DENSITY * external.delta * vw * vh {
+		if probability(WAVE_DENSITY * external.delta * vw * vh) {
 			Some(Wave {
-				pos: (px + rand_in(-vw, vw), py + rand_in(-vh, vh)),
+				pos: snap_to_grid((px + rand_in(-vw, vw), py + rand_in(-vh, vh)), (16., 16.)),
 				animation: Animation::new(Texture::Wave, 3., Animation::SIN, Some(1.0)),
 			})
 		} else {

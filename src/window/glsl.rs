@@ -35,6 +35,12 @@ impl From<(f32, f32)> for GLvec2 {
     }
 }
 
+impl From<(i32, i32)> for GLvec2 {
+    fn from((i1, i2): (i32, i32)) -> Self {
+        GLvec2(i1 as f32, i2 as f32)
+    }
+}
+
 #[repr(C, align(16))]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct GLvec3(pub f32, pub f32, pub f32);
@@ -50,8 +56,9 @@ impl From<(f32, f32, f32)> for GLvec3 {
 pub struct GLvec4(pub f32, pub f32, pub f32, pub f32);
 
 impl GLvec4 {
-    pub fn rgba(r : u32, g: u32, b: u32, a : u32) -> Self {
-        let f = |i| i as f32 / 255.;
+    pub fn rgba(&self) -> Self {
+        let GLvec4(r,g,b,a) = *self;
+        let f = |i| i / 255.;
         Self(f(r), f(g), f(b), f(a))
     }
 }

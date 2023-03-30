@@ -34,6 +34,7 @@ pub fn create_spritesheet(
 
 	for image in &images {
 		let mut best_extension: Option<(usize, (u32, u32), bool)> = None;
+		corners.sort_by_key(|c| c.1);
 		'corner_loop: for corner in corners.iter().enumerate() {
 			for rotated in &[false, true] {
 				let x_coord = corner.1 .0
@@ -100,30 +101,30 @@ pub fn create_spritesheet(
 			dyn_image = grown;
 		}
 
-		let dims;
-		if position.2 {
-			let flipped = image::imageops::rotate90(image);
-			dyn_image.copy_from(&flipped, corner.0, corner.1).unwrap();
-			dims = (
-				corner.0 + flipped.dimensions().0,
-				corner.1 + flipped.dimensions().1,
-			);
-			final_coords.push((true, (dims.0, corner.1), (corner.0, dims.1)));
+		let rotated = position.2;
+		let flipped = image::imageops::rotate270(image);
+		let copy_src = if rotated {
+			&flipped
 		} else {
-			dyn_image.copy_from(image, corner.0, corner.1).unwrap();
-			dims = (
-				corner.0 + image.dimensions().0,
-				corner.1 + image.dimensions().1,
-			);
-			final_coords.push((false, corner, dims));
-		}
+			image
+		};
+
+		dyn_image.copy_from(copy_src, corner.0, corner.1).unwrap();
+		let dims = (
+			corner.0 + copy_src.dimensions().0,
+			corner.1 + copy_src.dimensions().1,
+		);
+		final_coords.push((rotated, corner, dims));
 
 		placed_images.push((corner, dims));
 
-		//1px padding to avoid bleeding 
+		//1px padding to avoid bleeding
 		corners.push((dims.0 + 1, corner.1));
 		corners.push((corner.0, dims.1 + 1));
 	}
+
+	#[cfg(debug_assertions)]
+	dyn_image.save("atlas.png").expect("!");
 
 	(dyn_image.into_rgba8(), final_coords)
 }

@@ -40,18 +40,18 @@ pub fn load_textures() -> (image::RgbaImage, TextureMap) {
 
 		let texture = GLvec4(ulx, uly, lrx, lry);
 
-		let raw_ratio = (lr.0 as f32 - ul.0 as f32) / (lr.1 as f32 - ul.1 as f32);
-		let ratio = if rotated {
-			raw_ratio.recip()
-		} else {
-			raw_ratio
-		};
+		let mut width = lr.0 as f32 - ul.0 as f32;
+		let mut height = lr.1 as f32 - ul.1 as f32;
+
+		if rotated {
+			std::mem::swap(&mut width, &mut height);
+		}
 
 		map.insert(
 			*text,
 			Instance {
 				texture,
-				scale: (text.frame_count() as f32 * ratio, 1.0).into(),
+				scale: (width, height / text.frame_count() as f32).into(),
 				rotation: if rotated { -90. } else { 0. }.into(),
 				..Default::default()
 			},

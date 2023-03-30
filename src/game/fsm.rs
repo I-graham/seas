@@ -1,16 +1,15 @@
 use super::*;
 
-pub trait StateMachine {
+pub trait Automaton {
 	type State: Copy + Eq;
 	
 	fn state(&self) -> Self::State;
 	fn state_mut(&mut self) -> &mut Self::State;
-	fn enter(&mut self, _new: Self::State) {}
-	fn exit(&mut self, _old: Self::State) {}
+	fn enter_from(&mut self, _old : Self::State) {}
+	fn exit_to(&mut self, _new: Self::State) {}
 	fn next_state(&self, external: &External) -> Self::State;
 	
-	fn by_table(&self, probability_table: &[(Self::State, f32)]) -> Self::State {
-		
+	fn by_probability(&self, probability_table: &[(Self::State, f32)]) -> Self::State {
 		let mut rng = random();
 		for &(state, prob) in probability_table {
 			if rng < prob {
@@ -18,7 +17,6 @@ pub trait StateMachine {
 			}
 			rng -= prob;
 		}
-
 		self.state()
 	}
 
@@ -32,9 +30,9 @@ pub trait StateMachine {
 	fn render(&self, _context: &External, _out: &mut Vec<Instance>) {}
 }
 
-impl<T: StateMachine> GameObject for T {
+impl<T: Automaton> GameObject for T {
 	fn plan(&self, world: &World, external: &External, input: &Input) {
-		StateMachine::plan(self, world, external, input)
+		Automaton::plan(self, world, external, input)
 	}
 
 	fn update(&mut self, external: &External) -> Option<Action> {
@@ -42,15 +40,15 @@ impl<T: StateMachine> GameObject for T {
 		let new = self.next_state(external);
 
 		if new != old {
-			self.exit(old);
+			self.exit_to(new);
 			*self.state_mut() = new;
-			self.enter(new);
+			self.enter_from(old);
 		}
 
-		StateMachine::update(self, external)
+		Automaton::update(self, external)
 	}
 
 	fn render(&self, context: &External, out: &mut Vec<Instance>) {
-		StateMachine::render(self, context, out)
+		Automaton::render(self, context, out)
 	}
 }

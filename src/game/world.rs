@@ -6,7 +6,7 @@ pub struct World {
 	map: Map,
 }
 
-const MAP_SIZE: u32 = 500;
+const MAP_SIZE: u32 = 500 * 32;
 impl World {
 	pub fn new() -> Self {
 		Self {

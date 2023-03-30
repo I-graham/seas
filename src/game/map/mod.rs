@@ -4,7 +4,6 @@ use puffin::*;
 use wave::*;
 
 use super::{Action, GameObject};
-use crate::game::random;
 use crate::window::{glsl::*, External, Instance, Texture};
 
 pub struct Map {
@@ -14,6 +13,8 @@ pub struct Map {
 }
 
 impl Map {
+	const BACKGROUND : GLvec4 = GLvec4(57., 120., 168., 255.);
+
 	pub fn new(size: u32) -> Self {
 		Self {
 			size,
@@ -25,8 +26,13 @@ impl Map {
 
 impl GameObject for Map {
 	fn update(&mut self, external: &External) -> Option<Action> {
-		Wave::maybe_spawn(external).map(|wave| self.waves.push(wave));
-		Puffin::maybe_spawn(external).map(|puffin| self.puffins.push(puffin));
+		if let Some(wave) = Wave::maybe_spawn(external) {
+			self.waves.push(wave)
+		}
+		
+		if let Some(puffin) = Puffin::maybe_spawn(external) {
+			self.puffins.push(puffin)
+		}
 
 		self.waves
 			.retain_mut(|wave| wave.update(external) != Some(Action::Die));
@@ -42,14 +48,15 @@ impl GameObject for Map {
 		context.clip(
 			out,
 			Instance {
-				color_tint: GLvec4::rgba(57, 120, 168, 255),
+				color_tint: Self::BACKGROUND.rgba(),
 				scale: GLvec2((self.size / 2) as f32, (self.size / 2) as f32),
 				..context.instance(Texture::Flat)
 			},
 		);
 
 		self.waves.iter().for_each(|wave| wave.render(context, out));
-		self.puffins.iter().for_each(|puffin| puffin.render(context, out));
-
+		self.puffins
+			.iter()
+			.for_each(|puffin| puffin.render(context, out));
 	}
 }

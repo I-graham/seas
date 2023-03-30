@@ -6,7 +6,7 @@ use std::hash::Hash;
 use std::time::Instant;
 use strum_macros::{EnumIter, IntoStaticStr};
 
-pub use animation::{Animation};
+pub use animation::Animation;
 
 pub type TextureMap = fnv::FnvHashMap<Texture, Instance>;
 
@@ -29,6 +29,14 @@ impl External {
 		let k = 2. * self.camera.scale;
 
 		(k * self.aspect(), k)
+	}
+
+	pub fn point_in_view(&self, (x, y): (f32, f32)) -> bool {
+		self.visible(Instance {
+			position: (x, y).into(),
+			scale: (0., 0.).into(),
+			..Default::default()
+		})
 	}
 
 	pub fn visible(&self, instance: Instance) -> bool {
@@ -73,6 +81,8 @@ pub enum Texture {
 	Puffin,
 	PuffinPeck,
 	PuffinFlip,
+	PuffinFly,
+	PuffinFlap,
 }
 
 impl Texture {
@@ -80,6 +90,8 @@ impl Texture {
 		match self {
 			Self::Wave => 27,
 			Self::PuffinPeck => 4,
+			Self::PuffinFly => 8,
+			Self::PuffinFlap => 5,
 			_ => 1,
 		}
 	}
@@ -97,9 +109,9 @@ pub struct Instance {
 }
 
 impl Instance {
-	pub fn scale(self, r: f32) -> Self {
+	pub fn scale(self, x: f32, y: f32) -> Self {
 		Self {
-			scale: GLvec2(r * self.scale.0, r * self.scale.1),
+			scale: GLvec2(x * self.scale.0, y * self.scale.1),
 			..self
 		}
 	}
@@ -109,7 +121,8 @@ impl Instance {
 		let shift = (lry - uly) / out_of as f32;
 		let starty = uly + n as f32 * shift;
 
-		let anti_bleed = shift * f32::EPSILON;
+		const ANTI_BLEED_MULTIPLIER: f32 = 10. * f32::EPSILON;
+		let anti_bleed = shift * ANTI_BLEED_MULTIPLIER;
 
 		Self {
 			texture: GLvec4(ulx, starty + anti_bleed, lrx, starty + shift - anti_bleed),
