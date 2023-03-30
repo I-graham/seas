@@ -32,11 +32,9 @@ impl External {
 	}
 
 	pub fn point_in_view(&self, (x, y): (f32, f32)) -> bool {
-		self.visible(Instance {
-			position: (x, y).into(),
-			scale: (0., 0.).into(),
-			..Default::default()
-		})
+		let (cx, cy) = self.camera.pos;
+		let k = self.camera.scale;
+		(x - cx).abs() < k * self.aspect() && (y - cy).abs() < k
 	}
 
 	pub fn visible(&self, instance: Instance) -> bool {
@@ -50,7 +48,7 @@ impl External {
 		let (dx, dy) = self.view_dims();
 
 		instance.screen_relative == GLbool::True
-			|| ((px - cx).abs() < max + dx && (py - cy).abs() < max + dy)
+			|| ((px - cx).abs() < max + dx / 2. && (py - cy).abs() < max + dy / 2.)
 	}
 
 	pub fn clip(&self, out: &mut Vec<Instance>, instance: Instance) {
@@ -58,10 +56,6 @@ impl External {
 		if self.visible(instance) {
 			out.push(instance);
 		}
-	}
-
-	pub fn corner_relative(&self, (dx, dy): (f32, f32)) -> (f32, f32) {
-		(dx / self.aspect() - dx.signum(), dy - dy.signum())
 	}
 
 	pub fn instance(&self, texture: Texture) -> Instance {

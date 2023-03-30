@@ -66,13 +66,15 @@ impl Automaton for Puffin {
 					Self::SPRITE_SIZE,
 				);
 
-				self.flipped = self.heading.0 > self.source.0;
+				if self.heading.0 != self.source.0 {
+					self.flipped = self.heading.0 > self.source.0;
+				}
 
 				(0.65, Animation::SIN_SQ)
 			}
 			PuffinFlap => {
 				reps = None;
-				(1., Animation::SIN_BOUNCE)
+				(0.8, Animation::SIN_BOUNCE)
 			}
 			_ => unreachable!(),
 		};
@@ -103,12 +105,10 @@ impl Puffin {
 		let (vw, vh) = (dw / 2., dh / 2.);
 
 		if probability(PUFFIN_DENSITY * external.delta * vw * vh) {
-			let (hx, hy) = snap_to_grid(
-				(px + rand_in(-vw, vw), py + rand_in(-vh, vh)),
-				Self::SPRITE_SIZE,
-			);
+			let (osx, osy) = (rand_in(-vw, vw), rand_in(-vh, vh));
+			let (hx, hy) = snap_to_grid((px + osx, py + osy), Self::SPRITE_SIZE);
 
-			let (sx, sy) = (hx + dw * rand_dir(), hy + dh * rand_dir());
+			let (sx, sy) = (hx + dw * osx.signum(), hy + dh * osy.signum());
 
 			Some(Self {
 				source: (sx, sy),

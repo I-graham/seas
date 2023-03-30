@@ -30,7 +30,7 @@ impl Wave {
 	pub fn maybe_spawn(external: &External) -> Option<Self> {
 		let (px, py) = external.camera.pos;
 
-		const WAVE_DENSITY: f32 = 1. / 20_000.;
+		const WAVE_DENSITY: f32 = 1. / 2_000.;
 		let (dw, dh) = external.view_dims();
 		let (vw, vh) = (dw / 2., dh / 2.);
 		if probability(WAVE_DENSITY * external.delta * vw * vh) {
