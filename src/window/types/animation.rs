@@ -19,7 +19,7 @@ impl Animation {
 	pub const REVERSE: Curve = |f| 1. - f;
 	pub const SIN: Curve = |f| (1. - (f * PI).cos()) / 2.;
 	pub const SIN_SQ: Curve = |f| Self::SIN(f).powf(2.);
-	pub const REV_SIN_SQ: Curve = |f| Self::SIN(1.0-f).powf(2.);
+	pub const REV_SIN_SQ: Curve = |f| Self::SIN(1.0 - f).powf(2.);
 	pub const SIN_BOUNCE: Curve = |f| Self::SIN(2. * f);
 
 	pub fn new(
@@ -37,19 +37,22 @@ impl Animation {
 		}
 	}
 
-	pub fn frame(&self, context: &External) -> Instance {
-		let elapsed = self.age(context.now);
+	pub fn frame(&self, external : &External) -> Instance {
+		let elapsed = self.age(external.now);
 		let frames = self.texture.frame_count();
 
-		let reps = elapsed / self.duration;
+		let reps_elapsed = elapsed / self.duration;
 
-		let proportion = self.repeat.unwrap_or(reps).min(reps);
+		let proportion = match self.repeat {
+			Some(reps) if elapsed > reps * self.duration => reps - f32::EPSILON,
+			_ => self.repeat.unwrap_or(reps_elapsed).min(reps_elapsed),
+		};
 
-		let frame = (frames as f32 * (self.curve)(proportion % 1.)) as u32;
+		let frame = (frames as f32 * (self.curve)(proportion.fract())) as u32;
 
-		context
+		external
 			.instance(self.texture)
-			.nth_frame(frame.min(frames - 1), frames)
+			.nth_frame(frame.clamp(0, frames - 1), frames)
 	}
 
 	pub fn finished(&self, now: Instant) -> bool {

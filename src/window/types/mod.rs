@@ -2,6 +2,7 @@ mod animation;
 
 use super::glsl::*;
 
+use cgmath::Vector2;
 use std::hash::Hash;
 use std::time::Instant;
 use strum_macros::{EnumIter, IntoStaticStr};
@@ -25,27 +26,27 @@ impl External {
 		self.now = now;
 	}
 
-	pub fn view_dims(&self) -> (f32, f32) {
+	pub fn view_dims(&self) -> Vector2<f32> {
 		let k = 2. * self.camera.scale;
 
-		(k * self.aspect(), k)
+		cgmath::vec2(k * self.aspect(), k)
 	}
 
-	pub fn point_in_view(&self, (x, y): (f32, f32)) -> bool {
-		let (cx, cy) = self.camera.pos;
+	pub fn point_in_view(&self, p: Vector2<f32>) -> bool {
+		let diff = self.camera.pos - p;
 		let k = self.camera.scale;
-		(x - cx).abs() < k * self.aspect() && (y - cy).abs() < k
+		diff.x.abs() < k * self.aspect() && diff.y.abs() < k
 	}
 
 	pub fn visible(&self, instance: Instance) -> bool {
-		let (cx, cy) = self.camera.pos;
+		let (cx, cy) = self.camera.pos.into();
 		let GLvec2(px, py) = instance.position;
 		let GLvec2(sx, sy) = instance.scale;
 
 		//maximal possible distance, since instances may be rotated
 		let max = sx.hypot(sy);
 
-		let (dx, dy) = self.view_dims();
+		let (dx, dy) = self.view_dims().into();
 
 		instance.screen_relative == GLbool::True
 			|| ((px - cx).abs() < max + dx / 2. && (py - cy).abs() < max + dy / 2.)
@@ -67,7 +68,7 @@ impl External {
 	}
 }
 
-#[derive(IntoStaticStr, EnumIter, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(IntoStaticStr, EnumIter, Hash, PartialEq, Debug, Eq, Clone, Copy)]
 pub enum Texture {
 	Flat,
 	Wave,
@@ -140,17 +141,17 @@ impl Default for Instance {
 
 #[derive(Clone, Copy)]
 pub struct Camera {
-	pub pos: (f32, f32),
+	pub pos: Vector2<f32>,
 	pub scale: f32,
 }
 
 impl Camera {
 	pub fn proj(&self, aspect: f32) -> cgmath::Matrix4<f32> {
 		cgmath::ortho(
-			self.pos.0 - aspect * self.scale,
-			self.pos.0 + aspect * self.scale,
-			self.pos.1 - self.scale,
-			self.pos.1 + self.scale,
+			self.pos.x - aspect * self.scale,
+			self.pos.x + aspect * self.scale,
+			self.pos.y - self.scale,
+			self.pos.y + self.scale,
 			-100.,
 			100.,
 		)

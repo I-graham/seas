@@ -28,17 +28,17 @@ impl GameState {
 		self.api.input.update_mouse();
 
 		const CAM_SPEED: f32 = 35.0;
-		self.api.external.camera.pos.0 += CAM_SPEED
+		self.api.external.camera.pos.x += CAM_SPEED
 			* self.api.external.delta
 			* (self.api.input.key(VirtualKeyCode::D) as i32
 				- self.api.input.key(VirtualKeyCode::A) as i32) as f32;
 
-		self.api.external.camera.pos.1 += CAM_SPEED
+		self.api.external.camera.pos.y += CAM_SPEED
 			* self.api.external.delta
 			* (self.api.input.key(VirtualKeyCode::W) as i32
 				- self.api.input.key(VirtualKeyCode::S) as i32) as f32;
 
-		const SCALE_SPEED : f32 = 20.;
+		const SCALE_SPEED: f32 = 20.;
 		self.api.external.camera.scale += SCALE_SPEED
 			* self.api.external.delta
 			* (self.api.input.key(VirtualKeyCode::Q) as i32

@@ -1,9 +1,10 @@
 use super::*;
 use crate::{game::*, window::Animation};
+use cgmath::*;
 
 pub struct Puffin {
-	source: (f32, f32),
-	heading: (f32, f32),
+	source: Vector2<i32>,
+	heading: Vector2<i32>,
 	flipped: bool,
 	animation: Animation,
 }
@@ -13,7 +14,9 @@ impl Automaton for Puffin {
 	type State = Texture;
 
 	fn update(&mut self, external: &External) -> Option<Action> {
-		if !external.visible(self.instance(external)) && !external.point_in_view(self.heading) {
+		if !external.visible(self.instance(external))
+			&& !external.point_in_view(self.heading.cast::<f32>().unwrap())
+		{
 			Some(Action::Die)
 		} else {
 			None
@@ -21,22 +24,27 @@ impl Automaton for Puffin {
 	}
 
 	fn next_state(&self, external: &External) -> Self::State {
+		let at_destination = self
+			.position(external)
+			.distance(self.heading.cast::<f32>().unwrap())
+			< f32::EPSILON;
+
 		if self.animation.finished(external.now) {
 			if self.state() == PuffinFly {
-				if self.heading != self.source {
-					PuffinFlap
-				} else {
+				if at_destination {
 					Puffin
+				} else {
+					PuffinFlap
 				}
 			} else {
 				self.by_probability(&[
-					(Puffin, 0.90),
+					(Puffin, 0.40),
 					(PuffinFlip, 0.045),
 					(PuffinPeck, 0.045),
-					(PuffinFly, 0.01),
+					(PuffinFly, 0.51),
 				])
 			}
-		} else if self.state() == PuffinFlap && self.position(external) == self.heading {
+		} else if self.state() == PuffinFlap && at_destination {
 			PuffinFly
 		} else {
 			self.state()
@@ -44,40 +52,42 @@ impl Automaton for Puffin {
 	}
 
 	fn enter_from(&mut self, old: Self::State) {
-		if probability(0.05) && ![PuffinFly, PuffinFlap].contains(&self.state()) {
+		if probability(0.05) && ![PuffinFly, PuffinFlap].contains(&old) {
 			self.flipped = !self.flipped;
 		}
 
 		use Texture::*;
 		let mut reps = Some(1.);
 		let (duration, curve) = match self.state() {
-			Puffin => (3., Animation::LINEAR),
+			Puffin => (rand_in(1., 6.), Animation::LINEAR),
 			PuffinFlip => (rand_in(1., 6.), Animation::LAST),
 			PuffinPeck => (0.5, Animation::LINEAR),
 			PuffinFly if old == PuffinFlap => {
 				self.source = self.heading;
-				(0.65, Animation::REV_SIN_SQ)
+				(0.75, Animation::REV_SIN_SQ)
 			}
 			PuffinFly => {
-				let (sx, sy) = self.source;
-				const FLEE: f32 = 80.0;
-				self.heading = snap_to_grid(
-					(sx + rand_in(-FLEE, FLEE), sy + rand_in(-FLEE, FLEE)),
-					Self::SPRITE_SIZE,
-				);
+				const FLEE: f32 = 320.;
 
-				if self.heading.0 != self.source.0 {
-					self.flipped = self.heading.0 > self.source.0;
+				while self.heading == self.source {
+					self.heading = snap_to_grid(
+						(self.source.cast::<f32>().unwrap() + rand_in2d(-FLEE, FLEE)).into(),
+						Self::SPRITE_DIMS,
+					)
+					.into();
 				}
 
-				(0.65, Animation::SIN_SQ)
+				self.flipped = self.heading.x > self.source.x;
+
+				(0.75, Animation::SIN_SQ)
 			}
 			PuffinFlap => {
 				reps = None;
-				(0.8, Animation::SIN_BOUNCE)
+				(0.65, Animation::SIN_BOUNCE)
 			}
 			_ => unreachable!(),
 		};
+
 		self.animation = Animation::new(self.state(), duration, curve, reps);
 	}
 
@@ -95,25 +105,30 @@ impl Automaton for Puffin {
 }
 
 impl Puffin {
-	const SPRITE_SIZE: (f32, f32) = (32., 16.);
+	const SPRITE_DIMS: (f32, f32) = (32., 16.);
 
 	pub fn maybe_spawn(external: &External) -> Option<Self> {
 		const PUFFIN_DENSITY: f32 = 1. / 80_000.;
 
-		let (px, py) = external.camera.pos;
-		let (dw, dh) = external.view_dims();
-		let (vw, vh) = (dw / 2., dh / 2.);
+		let v = external.view_dims() / 2.;
 
-		if probability(PUFFIN_DENSITY * external.delta * vw * vh) {
-			let (osx, osy) = (rand_in(-vw, vw), rand_in(-vh, vh));
-			let (hx, hy) = snap_to_grid((px + osx, py + osy), Self::SPRITE_SIZE);
+		if probability(PUFFIN_DENSITY * external.delta * v.x * v.y) {
+			let pos = external.camera.pos;
 
-			let (sx, sy) = (hx + dw * osx.signum(), hy + dh * osy.signum());
+			let offset = v.map(|f| rand_in(-f, f));
+			let heading = snap_to_grid(pos + offset, Self::SPRITE_DIMS);
+
+			let signum = offset.map(f32::signum);
+
+			let source = snap_to_grid(
+				heading.cast::<f32>().unwrap() + v.mul_element_wise(signum),
+				Self::SPRITE_DIMS,
+			);
 
 			Some(Self {
-				source: (sx, sy),
-				heading: (hx, hy),
-				flipped: sx < hx,
+				source,
+				heading,
+				flipped: source.x < heading.x,
 				animation: Animation::new(Texture::PuffinFlap, 1., Animation::SIN_BOUNCE, None),
 			})
 		} else {
@@ -121,23 +136,21 @@ impl Puffin {
 		}
 	}
 
-	fn position(&self, external: &External) -> (f32, f32) {
-		if self.state() == PuffinFlap {
-			let (sx, sy) = self.source;
-			let (hx, hy) = self.heading;
+	fn position(&self, external: &External) -> Vector2<f32> {
+		let fsource = self.source.cast::<f32>().unwrap();
+		let fheading = self.heading.cast::<f32>().unwrap();
 
-			let dist = (sx - hx).hypot(sy - hy);
+		if self.state() == PuffinFlap {
+			let dist = fsource.distance(fheading);
 
 			const PUFFIN_SPEED: f32 = 60.0;
 			let total_time = dist / PUFFIN_SPEED;
 
 			let t = (self.animation.age(external.now) / total_time).min(1.);
 
-			let lerp = |a, b| (1. - t) * a + t * b;
-
-			(lerp(sx, hx), lerp(sy, hy))
+			(1. - t) * fsource + t * fheading
 		} else {
-			self.source
+			fsource
 		}
 	}
 

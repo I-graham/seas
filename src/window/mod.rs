@@ -9,7 +9,7 @@ pub use glsl::*;
 pub use input::*;
 use std::time::Instant;
 
-pub use types::{Camera, Animation, External, Instance, Texture, TextureMap};
+pub use types::{Animation, Camera, External, Instance, Texture, TextureMap};
 pub use ui::*;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
@@ -53,11 +53,11 @@ impl WinApi {
 			external: External {
 				texture_map,
 				camera: Camera {
-					pos: (0., 0.),
+					pos: cgmath::vec2(0., 0.),
 					scale: 32.,
 				},
 				size: (size.width, size.height),
-				now : Instant::now(),
+				now: Instant::now(),
 				delta: 0.,
 			},
 			output: vec![],
