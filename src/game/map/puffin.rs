@@ -108,7 +108,7 @@ impl Puffin {
 	const SPRITE_DIMS: (f32, f32) = (32., 16.);
 
 	pub fn maybe_spawn(external: &External) -> Option<Self> {
-		const PUFFIN_DENSITY: f32 = 1. / 80_000.;
+		const PUFFIN_DENSITY: f32 = 1. / 800_000.;
 
 		let v = external.view_dims() / 2.;
 
