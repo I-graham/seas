@@ -1,13 +1,12 @@
-mod map;
+mod fsm;
+mod messenger;
 mod state;
 mod ui;
-mod fsm;
 mod utils;
 mod world;
-mod messenger;
 
-pub use fsm::*;
 use crate::window::{External, Input, Instance};
+pub use fsm::*;
 pub use utils::*;
 use winit::event_loop::EventLoop;
 use world::World;
@@ -19,7 +18,17 @@ pub trait GameObject {
 		None
 	}
 
-	fn render(&self, _context: &External, _out: &mut Vec<Instance>) {}
+	//If object renders a single instance, this can be implemented instea
+	//of GameObject::render
+	fn instance(&self, _external: &External) -> Option<Instance> {
+		None
+	}
+
+	fn render(&self, external: &External, out: &mut Vec<Instance>) {
+		if let Some(inst) = self.instance(external) {
+			external.clip(out, inst);
+		}
+	}
 }
 
 #[derive(Clone, PartialEq)]

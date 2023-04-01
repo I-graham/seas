@@ -11,7 +11,9 @@ pub struct Renderer<UniformType: Copy + PartialEq, InstanceType> {
 }
 
 impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, InstanceType> {
-	const PREALLOCATED_INSTANCES: usize = 16;
+	const PREALLOCATED_INSTANCES: usize = 0x10;
+	const DEFAULT_CHUNK_SIZE: wgpu::BufferAddress =
+		(Self::PREALLOCATED_INSTANCES * std::mem::size_of::<InstanceType>()) as wgpu::BufferAddress;
 
 	pub fn new(win: &winit::window::Window, sample_count: u32) -> Self {
 		let resources =
@@ -104,7 +106,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			instance_len: 0,
 			instance_cap: Self::PREALLOCATED_INSTANCES,
 			encoder: resources.device.create_command_encoder(&Default::default()),
-			staging_belt: wgpu::util::StagingBelt::new(0x100),
+			staging_belt: wgpu::util::StagingBelt::new(Self::DEFAULT_CHUNK_SIZE),
 			texture_bg,
 			nearest_sampler: sampler,
 			current_frame: None,
@@ -172,6 +174,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 		self.render_data.instance_len = instances.len();
 
 		let inst_slice = utils::to_char_slice(instances);
+
 		self.render_data
 			.staging_belt
 			.write_buffer(

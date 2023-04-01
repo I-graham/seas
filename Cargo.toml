@@ -24,4 +24,4 @@ rand = "0.8"
 compile-shaders = ["shaderc"]
 
 [build-dependencies]
-shaderc= { version="0.8", optional=true } #requires git, python, ninja (on windows), & a c++11 compiler to be in path variable
+shaderc = { version="0.8", optional=true } #requires git, python, ninja (on windows), & a c++11 compiler to be in path variable

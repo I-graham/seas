@@ -1,9 +1,9 @@
-use cgmath::Vector2;
+use cgmath::*;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Uniform {
-	pub ortho: cgmath::Matrix4<f32>,
+	pub ortho: Matrix4<f32>,
 }
 
 #[repr(transparent)]

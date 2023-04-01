@@ -1,6 +1,11 @@
-use super::*;
-use crate::{game::*, window::Animation};
+use crate::game::{utils::*, Action, Automaton};
+use crate::window::{Animation, External, Instance, Texture};
 use cgmath::*;
+
+const SPOT_CELL_SIZE: (f32, f32) = (32., 16.);
+const PUFFIN_DENSITY: f32 = 1. / 800_000.;
+const FLEE_DISTANCE: f32 = 320.;
+const PUFFIN_SPEED: f32 = 60.0;
 
 pub struct Puffin {
 	source: Vector2<i32>,
@@ -14,8 +19,8 @@ impl Automaton for Puffin {
 	type State = Texture;
 
 	fn update(&mut self, external: &External) -> Option<Action> {
-		if !external.visible(self.instance(external))
-			&& !external.point_in_view(self.heading.cast::<f32>().unwrap())
+		if !external.point_in_view(self.heading.cast::<f32>().unwrap())
+			&& !external.visible(Automaton::instance(self, external).unwrap())
 		{
 			Some(Action::Die)
 		} else {
@@ -38,10 +43,10 @@ impl Automaton for Puffin {
 				}
 			} else {
 				self.by_probability(&[
-					(Puffin, 0.40),
+					(Puffin, 0.90),
 					(PuffinFlip, 0.045),
 					(PuffinPeck, 0.045),
-					(PuffinFly, 0.51),
+					(PuffinFly, 0.01),
 				])
 			}
 		} else if self.state() == PuffinFlap && at_destination {
@@ -59,27 +64,27 @@ impl Automaton for Puffin {
 		use Texture::*;
 		let mut reps = Some(1.);
 		let (duration, curve) = match self.state() {
-			Puffin => (rand_in(1., 6.), Animation::LINEAR),
-			PuffinFlip => (rand_in(1., 6.), Animation::LAST),
-			PuffinPeck => (0.5, Animation::LINEAR),
+			Puffin => (rand_in(1., 6.), Animation::FIRST),
+			PuffinFlip => (rand_in(1., 6.), Animation::FIRST),
+			PuffinPeck => (0.65, Animation::LINEAR),
 			PuffinFly if old == PuffinFlap => {
 				self.source = self.heading;
-				(0.75, Animation::REV_SIN_SQ)
+				(0.65, Animation::REV_SIN_SQ)
 			}
 			PuffinFly => {
-				const FLEE: f32 = 320.;
-
-				while self.heading == self.source {
+				//Find new home
+				//Different x values to avoid unrealistic movement.
+				while self.heading.x == self.source.x {
 					self.heading = snap_to_grid(
-						(self.source.cast::<f32>().unwrap() + rand_in2d(-FLEE, FLEE)).into(),
-						Self::SPRITE_DIMS,
-					)
-					.into();
+						self.source.cast::<f32>().unwrap()
+							+ rand_in2d(-FLEE_DISTANCE, FLEE_DISTANCE),
+						SPOT_CELL_SIZE,
+					);
 				}
 
 				self.flipped = self.heading.x > self.source.x;
 
-				(0.75, Animation::SIN_SQ)
+				(0.65, Animation::SIN_SQ)
 			}
 			PuffinFlap => {
 				reps = None;
@@ -99,30 +104,32 @@ impl Automaton for Puffin {
 		&mut self.animation.texture
 	}
 
-	fn render(&self, external: &External, out: &mut Vec<Instance>) {
-		external.clip(out, self.instance(external))
+	fn instance(&self, external: &External) -> Option<Instance> {
+		Some(
+			Instance {
+				position: self.position(external).into(),
+				..self.animation.frame(external)
+			}
+			.scale(if self.flipped { -1. } else { 1. }, 1.),
+		)
 	}
 }
 
 impl Puffin {
-	const SPRITE_DIMS: (f32, f32) = (32., 16.);
-
 	pub fn maybe_spawn(external: &External) -> Option<Self> {
-		const PUFFIN_DENSITY: f32 = 1. / 800_000.;
-
 		let v = external.view_dims() / 2.;
 
 		if probability(PUFFIN_DENSITY * external.delta * v.x * v.y) {
 			let pos = external.camera.pos;
 
 			let offset = v.map(|f| rand_in(-f, f));
-			let heading = snap_to_grid(pos + offset, Self::SPRITE_DIMS);
+			let heading = snap_to_grid(pos + offset, SPOT_CELL_SIZE);
 
 			let signum = offset.map(f32::signum);
 
 			let source = snap_to_grid(
 				heading.cast::<f32>().unwrap() + v.mul_element_wise(signum),
-				Self::SPRITE_DIMS,
+				SPOT_CELL_SIZE,
 			);
 
 			Some(Self {
@@ -143,7 +150,6 @@ impl Puffin {
 		if self.state() == PuffinFlap {
 			let dist = fsource.distance(fheading);
 
-			const PUFFIN_SPEED: f32 = 60.0;
 			let total_time = dist / PUFFIN_SPEED;
 
 			let t = (self.animation.age(external.now) / total_time).min(1.);
@@ -152,13 +158,5 @@ impl Puffin {
 		} else {
 			fsource
 		}
-	}
-
-	fn instance(&self, external: &External) -> Instance {
-		Instance {
-			position: self.position(external).into(),
-			..self.animation.frame(external)
-		}
-		.scale(if self.flipped { -1. } else { 1. }, 1.)
 	}
 }

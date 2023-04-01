@@ -1,19 +1,20 @@
 mod puffin;
 mod wave;
+
 use puffin::*;
 use wave::*;
 
-use super::{Action, GameObject};
+use crate::game::{utils::*, Action, GameObject};
 use crate::window::{glsl::*, External, Instance, Texture};
 
 pub struct Map {
-	pub size: u32,
-	pub waves: Vec<Wave>,
-	pub puffins: Vec<Puffin>,
+	size: u32,
+	waves: Vec<Wave>,
+	puffins: Vec<Puffin>,
 }
 
 impl Map {
-	const BACKGROUND : GLvec4 = GLvec4(57., 120., 168., 255.);
+	const BACKGROUND: GLvec4 = GLvec4(57., 120., 168., 255.);
 
 	pub fn new(size: u32) -> Self {
 		Self {
@@ -29,7 +30,7 @@ impl GameObject for Map {
 		if let Some(wave) = Wave::maybe_spawn(external) {
 			self.waves.push(wave)
 		}
-		
+
 		if let Some(puffin) = Puffin::maybe_spawn(external) {
 			self.puffins.push(puffin)
 		}

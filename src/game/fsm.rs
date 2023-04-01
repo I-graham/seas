@@ -2,13 +2,13 @@ use super::*;
 
 pub trait Automaton {
 	type State: Copy + Eq;
-	
+
 	fn state(&self) -> Self::State;
 	fn state_mut(&mut self) -> &mut Self::State;
-	fn enter_from(&mut self, _old : Self::State) {}
+	fn enter_from(&mut self, _old: Self::State) {}
 	fn exit_to(&mut self, _new: Self::State) {}
 	fn next_state(&self, external: &External) -> Self::State;
-	
+
 	fn by_probability(&self, probability_table: &[(Self::State, f32)]) -> Self::State {
 		let mut rng = random();
 		for &(state, prob) in probability_table {
@@ -20,14 +20,21 @@ pub trait Automaton {
 		self.state()
 	}
 
-
 	fn plan(&self, _world: &World, _external: &External, _input: &Input) {}
 
 	fn update(&mut self, _external: &External) -> Option<Action> {
 		None
 	}
 
-	fn render(&self, _context: &External, _out: &mut Vec<Instance>) {}
+	fn instance(&self, external: &External) -> Option<Instance> {
+		None
+	}
+
+	fn render(&self, external: &External, out: &mut Vec<Instance>) {
+		if let Some(inst) = self.instance(external) {
+			external.clip(out, inst);
+		}
+	}
 }
 
 impl<T: Automaton> GameObject for T {

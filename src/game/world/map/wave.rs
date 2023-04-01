@@ -17,14 +17,11 @@ impl GameObject for Wave {
 		}
 	}
 
-	fn render(&self, external: &External, out: &mut Vec<Instance>) {
-		external.clip(
-			out,
-			Instance {
-				position: self.pos.cast::<f32>().unwrap().into(),
-				..self.animation.frame(external)
-			},
-		)
+	fn instance(&self, external: &External) -> Option<Instance> {
+		Some(Instance {
+			position: self.pos.cast::<f32>().unwrap().into(),
+			..self.animation.frame(external)
+		})
 	}
 }
 

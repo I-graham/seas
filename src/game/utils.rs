@@ -13,11 +13,11 @@ pub fn rand_in(lo: f32, hi: f32) -> f32 {
 }
 
 pub fn rand_in2d(lo: f32, hi: f32) -> Vector2<f32> {
-	cgmath::vec2(rand_in(lo, hi), rand_in(lo, hi))
+	vec2(rand_in(lo, hi), rand_in(lo, hi))
 }
 
 pub fn snap_to_grid(p: Vector2<f32>, (cellx, celly): (f32, f32)) -> Vector2<i32> {
-	cgmath::vec2(
+	vec2(
 		(cellx * (p.x / cellx).round()) as i32,
 		(celly * (p.y / celly).round()) as i32,
 	)

@@ -2,7 +2,7 @@ mod animation;
 
 use super::glsl::*;
 
-use cgmath::Vector2;
+use cgmath::*;
 use std::hash::Hash;
 use std::time::Instant;
 use strum_macros::{EnumIter, IntoStaticStr};
@@ -29,7 +29,7 @@ impl External {
 	pub fn view_dims(&self) -> Vector2<f32> {
 		let k = 2. * self.camera.scale;
 
-		cgmath::vec2(k * self.aspect(), k)
+		vec2(k * self.aspect(), k)
 	}
 
 	pub fn point_in_view(&self, p: Vector2<f32>) -> bool {
@@ -78,6 +78,7 @@ pub enum Texture {
 	PuffinFlip,
 	PuffinFly,
 	PuffinFlap,
+	Raft,
 }
 
 impl Texture {
@@ -146,8 +147,8 @@ pub struct Camera {
 }
 
 impl Camera {
-	pub fn proj(&self, aspect: f32) -> cgmath::Matrix4<f32> {
-		cgmath::ortho(
+	pub fn proj(&self, aspect: f32) -> Matrix4<f32> {
+		ortho(
 			self.pos.x - aspect * self.scale,
 			self.pos.x + aspect * self.scale,
 			self.pos.y - self.scale,
