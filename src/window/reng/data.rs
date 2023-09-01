@@ -10,6 +10,5 @@ pub struct RenderData {
 	pub texture_bg: wgpu::BindGroup,
 	pub nearest_sampler: wgpu::Sampler,
 	pub current_frame: Option<wgpu::SurfaceTexture>,
-	pub cached_buffers:
-		std::collections::HashMap<&'static str, (usize, wgpu::BindGroup, wgpu::Buffer)>,
+	pub cached_buffers: fnv::FnvHashMap<&'static str, (usize, wgpu::BindGroup, wgpu::Buffer)>,
 }

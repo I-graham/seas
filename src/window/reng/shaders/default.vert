@@ -42,8 +42,8 @@ vec2 rotv2(vec2 vec, float theta) {
 	float a = degrees(atan(vec.y, vec.x));
 
 	return length(vec) * vec2(
-		cos(radians(a + theta)),
-		sin(radians(a + theta))
+		cos(radians(a - theta)),
+		sin(radians(a - theta))
 	);
 }
 
@@ -53,7 +53,7 @@ void main() {
 
 	vec2 coord = positions[index] / 2.;
 
-    vec2 pos = rotv2(coord, inst.rotation) * inst.scale + inst.translate;
+    vec2 pos = rotv2(coord * inst.scale, inst.rotation) + inst.translate;
 		
 	text_coords = inst_coords[index];
 	color_tint  = inst.tint;

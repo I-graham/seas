@@ -8,34 +8,34 @@ pub use super::*;
 use crate::window::External;
 
 pub struct World {
-	pub map: Map,
-	pub raft: Raft,
+    pub map: Map,
+    pub raft: Raft,
 }
 
 const MAP_SIZE: u32 = 500 * 32;
 impl World {
-	pub fn new() -> Self {
-		Self {
-			map: Map::new(MAP_SIZE),
-			raft: Raft::new(),
-		}
-	}
+    pub fn new() -> Self {
+        Self {
+            map: Map::new(MAP_SIZE),
+            raft: Raft::new(),
+        }
+    }
 }
 
 impl GameObject for World {
-	fn plan(&self, world: &World, external: &External, input: &Input) {
-		self.map.plan(world, external, input);
-		self.raft.plan(world, external, input);
-	}
+    fn plan(&self, world: &World, external: &External, input: &Input, messenger: &mut Messenger) {
+        self.map.plan(world, external, input, messenger);
+        self.raft.plan(world, external, input, messenger);
+    }
 
-	fn update(&mut self, external: &External) -> Option<super::Action> {
-		self.map.update(external);
-		self.raft.update(external);
-		None
-	}
+    fn update(&mut self, external: &External, messenger: &Messenger) -> Option<super::Action> {
+        self.map.update(external, messenger);
+        self.raft.update(external, messenger);
+        None
+    }
 
-	fn render(&self, external: &External, out: &mut Vec<Instance>) {
-		self.map.render(external, out);
-		self.raft.render(external, out);
-	}
+    fn render(&self, external: &External, out: &mut Vec<Instance>) {
+        self.map.render(external, out);
+        self.raft.render(external, out);
+    }
 }

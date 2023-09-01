@@ -110,7 +110,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			texture_bg,
 			nearest_sampler: sampler,
 			current_frame: None,
-			cached_buffers: std::collections::HashMap::new(),
+			cached_buffers: Default::default(),
 		};
 
 		Self {
