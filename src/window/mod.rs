@@ -1,92 +1,135 @@
 pub mod glsl;
-mod input;
 mod loader;
 mod reng;
 mod types;
-pub mod ui;
 
 pub use glsl::*;
-pub use input::*;
 use std::time::Instant;
 
-pub use types::{Animation, Camera, External, Instance, Texture, TextureMap};
-pub use ui::*;
+pub use types::*;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
-    width: 400.0,
-    height: 400.0,
+	width: 800.0,
+	height: 600.0,
 };
 
-pub struct WinApi {
-    pub window: winit::window::Window,
-    pub input: Input,
-    pub external: External,
-    pub output: Vec<Instance>,
-    renderer: reng::Renderer<glsl::Uniform, Instance>,
+#[derive(PartialEq, Eq)]
+enum DrawType {
+	Cached,
+	Uncached,
 }
 
-impl WinApi {
-    pub fn new(event_loop: &winit::event_loop::EventLoopWindowTarget<()>) -> Self {
-        let window = winit::window::WindowBuilder::new()
-            .with_min_inner_size(START_WIN_SIZE)
-            .build(event_loop)
-            .expect("unable to create window");
+pub struct Window {
+	window: winit::window::Window,
+	inputs: External,
+	output: Vec<Instance>,
+	draw_type: DrawType,
+	renderer: reng::Renderer<glsl::Uniform, Instance>,
+}
 
-        let size = window.inner_size();
+impl Window {
+	pub fn new<Texture: TextureType>(
+		event_loop: &winit::event_loop::EventLoopWindowTarget<()>,
+	) -> Self {
+		let window = winit::window::WindowBuilder::new()
+			.with_min_inner_size(START_WIN_SIZE)
+			.build(event_loop)
+			.expect("unable to create window");
 
-        let mut renderer = reng::Renderer::new(&window, 4);
+		let size = window.inner_size();
 
-        let (image, texture_map) = loader::load_textures();
-        let texture = renderer.create_texture_from_image(&image);
-        renderer.set_texture(&texture);
+		let mut renderer = reng::Renderer::new(&window, 4);
 
-        Self {
-            window,
-            input: Input {
-                scroll: 0.,
-                mouse_pos: (0.0, 0.0),
-                left_mouse: ui::MouseState::Up,
-                right_mouse: ui::MouseState::Up,
-                keymap: fnv::FnvHashMap::default(),
-            },
-            renderer,
-            external: External {
-                texture_map,
-                camera: Camera {
-                    pos: cgmath::vec2(0., 0.),
-                    scale: 32.,
-                },
-                size: (size.width, size.height),
-                now: Instant::now(),
-                delta: 0.,
-            },
-            output: vec![],
-        }
-    }
+		let (image, texture_map) = loader::load_textures::<Texture>();
+		let texture = renderer.create_texture_from_image(&image);
+		renderer.set_texture(&texture);
 
-    pub fn clear(&mut self) {
-        //Red for debugging purposes.
-        self.output.clear();
-        self.renderer.clear(wgpu::Color::RED);
-    }
+		Self {
+			window,
+			renderer,
+			inputs: External {
+				scroll: 0.,
+				mouse_pos: cgmath::vec2(0.0, 0.0),
+				left_mouse: ButtonState::Up,
+				right_mouse: ButtonState::Up,
+				keymap: fnv::FnvHashMap::default(),
+				texture_map,
+				camera: Camera {
+					pos: cgmath::vec2(0., 0.),
+					scale: 600.,
+				},
+				win_size: (size.width, size.height),
+				now: Instant::now(),
+				delta: 0.,
+			},
+			draw_type: DrawType::Uncached,
+			output: vec![],
+		}
+	}
 
-    pub fn draw(&mut self) {
-        self.renderer.set_uniform(glsl::Uniform {
-            ortho: self.external.camera.proj(self.external.aspect()),
-        });
-        self.renderer.draw(&self.output);
-    }
+	pub fn inputs_mut(&mut self) -> &mut External {
+		&mut self.inputs
+	}
 
-    pub fn submit(&mut self) {
-        self.renderer.submit();
-    }
+	pub fn inputs(&self) -> &External {
+		&self.inputs
+	}
 
-    pub fn resize(&mut self, dims: winit::dpi::PhysicalSize<u32>) {
-        self.external.size = (dims.width, dims.height);
-        self.renderer.resize(dims);
-    }
+	pub fn clip(&mut self, instance: Instance) {
+		//clip unseen instances
+		if self.inputs.visible(instance) {
+			self.output.push(instance);
+		}
+	}
 
-    pub fn id(&self) -> winit::window::WindowId {
-        self.window.id()
-    }
+	pub fn clear(&mut self) {
+		//White for debugging purposes.
+		self.renderer.clear(wgpu::Color::WHITE);
+	}
+
+	pub fn draw(&mut self) {
+		self.renderer.set_uniform(glsl::Uniform {
+			ortho: self.inputs.camera.proj(self.inputs.aspect()),
+		});
+		self.renderer.draw(&self.output);
+		self.output.clear();
+	}
+
+	pub fn is_cached(&self, name: &'static str) -> bool {
+		self.renderer.is_cached(name)
+	}
+
+	pub fn cache(&mut self, name: &'static str, instances: &[Instance]) {
+		self.renderer.cache(name, instances)
+	}
+
+	pub fn draw_cached(&mut self, name: &'static str, pos: (f32, f32), scale: f32) {
+		if self.draw_type != DrawType::Cached && !self.output.is_empty() {
+			self.draw();
+		}
+
+		let shift = cgmath::Vector2::<f32>::from(pos);
+		self.renderer.set_uniform(glsl::Uniform {
+			ortho: Camera {
+				pos: self.inputs.camera.pos - shift,
+				scale: self.inputs.camera.scale / scale,
+			}
+			.proj(self.inputs.aspect()),
+		});
+
+		self.renderer.draw_cached(name);
+	}
+
+	pub fn submit(&mut self) {
+		self.renderer.submit();
+	}
+
+	pub fn resize(&mut self, dims: winit::dpi::PhysicalSize<u32>) {
+		self.inputs.win_size = (dims.width, dims.height);
+		self.renderer.resize(dims);
+	}
+
+	pub fn id(&self) -> winit::window::WindowId {
+		self.window.id()
+	}
 }

@@ -1,8 +1,9 @@
-#![windows_subsystem = "windows"]
-
-mod game;
+mod eng;
 mod window;
+mod world;
+
+use world::World;
+
 fn main() {
-    env_logger::init();
-    game::play();
+	eng::play::<World>();
 }
