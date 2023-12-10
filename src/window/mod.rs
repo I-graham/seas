@@ -5,9 +5,9 @@ mod types;
 
 pub use glsl::*;
 pub use types::*;
+pub use reng::CacheId;
 
 use cgmath::*;
-use std::sync::*;
 use std::time::Instant;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
@@ -20,8 +20,6 @@ enum DrawKind {
 	Cached,
 	Uncached,
 }
-
-pub type CacheId = Arc<usize>;
 
 pub struct Window {
 	window: winit::window::Window,

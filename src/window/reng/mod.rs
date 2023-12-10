@@ -6,6 +6,8 @@ pub use data::*;
 
 use std::sync::*;
 
+pub type CacheId = Arc<usize>;
+
 pub struct Renderer<UniformType: Copy + PartialEq, InstanceType> {
 	resources: resources::RenderResources2D<UniformType, InstanceType>,
 	render_data: data::RenderData,
@@ -252,11 +254,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			});
 	}
 
-	pub fn is_cached(&self, id: &Arc<usize>) -> bool {
-		self.render_data.cached_buffers.contains_key(id)
-	}
-
-	pub fn cache(&mut self, instances: &[InstanceType]) -> Arc<usize> {
+	pub fn cache(&mut self, instances: &[InstanceType]) -> CacheId {
 		use wgpu::util::*;
 		let buffer = self
 			.resources
@@ -283,7 +281,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 				}],
 			});
 
-		let id = Arc::new(self.render_data.cached_count);
+		let id = CacheId::new(self.render_data.cached_count);
 		self.render_data.cached_count += 1;
 
 		self.render_data
@@ -293,7 +291,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 		id
 	}
 
-	pub fn draw_cached(&mut self, id: &Arc<usize>) {
+	pub fn draw_cached(&mut self, id: &CacheId) {
 		self.set_uniform(self.uniform.expect("Uniform not given!"));
 
 		let view = &self.get_frame().texture.create_view(&Default::default());

@@ -62,6 +62,9 @@ impl GameObject for Map {
 
 	fn render(&self, win: &mut Window) {
 		self.tiles.render(win);
+
+		win.reserve(self.waves.len() + self.puffins.len());
+
 		self.waves.iter().for_each(|wave| wave.render(win));
 		self.puffins.iter().for_each(|puffin| puffin.render(win));
 	}
