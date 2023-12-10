@@ -35,7 +35,7 @@ impl GameObject for Wave {
 
 impl Wave {
 	pub fn maybe_spawn(external: &External) -> Option<Self> {
-		const WAVE_DENSITY: f32 = 1. / 2_000.;
+		const WAVE_DENSITY: f32 = 1. / 20_000.;
 		let v = external.view_dims() / 2.;
 
 		if probability(WAVE_DENSITY * external.delta * v.x * v.y) {
@@ -44,7 +44,7 @@ impl Wave {
 
 			Some(Wave {
 				pos: snap_to_grid(cam + offset, (16., 16.)),
-				animation: Animation::new(Texture::Wave, 3., curves::SIN, 1.0),
+				animation: Animation::new(Texture::Wave, 3., curves::SIN_SQ, 1.0),
 			})
 		} else {
 			None

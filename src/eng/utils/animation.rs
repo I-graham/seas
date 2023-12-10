@@ -44,7 +44,7 @@ impl<Texture: TextureType> Animation<Texture> {
 
 		let reps_elapsed = elapsed / self.duration;
 
-		let proportion = reps_elapsed.max(self.repeat) - f32::EPSILON;
+		let proportion = reps_elapsed.min(self.repeat) - f32::EPSILON;
 
 		let frame = (frames as f32 * (self.curve)(proportion.fract())) as u32;
 
