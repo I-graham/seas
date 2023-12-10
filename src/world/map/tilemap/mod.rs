@@ -11,20 +11,20 @@ use noise::*;
 
 #[derive(Clone, Copy)]
 pub struct TileMapSettings {
-	sea_level: f32,
+	sea_level: f64,
 	seed: u32,
 }
 
 pub struct TileMap {
 	settings: TileMapSettings,
 	chunks: FnvHashMap<Vector2<i32>, Chunk>,
-	noise_fn: Perlin,
+	noise_fn: PerlinSurflet,
 }
 
 impl Default for TileMapSettings {
 	fn default() -> Self {
 		Self {
-			sea_level: 0.5,
+			sea_level: 0.0,
 			seed: rand::random(),
 		}
 	}
@@ -36,14 +36,14 @@ impl TileMap {
 		Self {
 			settings,
 			chunks: Default::default(),
-			noise_fn: Perlin::default().set_seed(seed),
+			noise_fn: PerlinSurflet::default().set_seed(seed),
 		}
 	}
 
 	fn chunk_at(&mut self, cell: Vector2<i32>) -> &mut Chunk {
 		self.chunks
 			.entry(cell)
-			.or_insert_with(|| Chunk::generate(cell, self.noise_fn))
+			.or_insert_with(|| Chunk::generate(self.settings, cell, self.noise_fn))
 	}
 }
 
@@ -76,7 +76,7 @@ impl GameObject for TileMap {
 
 		for cx in llx..=urx {
 			for cy in lly..=ury {
-				self.chunks[&(cx, cy).into()].render(win);
+				self.chunks[&vec2(cx, cy)].render(win);
 			}
 		}
 	}

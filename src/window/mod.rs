@@ -4,9 +4,11 @@ mod reng;
 mod types;
 
 pub use glsl::*;
-use std::time::Instant;
-
 pub use types::*;
+
+use cgmath::*;
+use std::sync::*;
+use std::time::Instant;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
 	width: 800.0,
@@ -18,6 +20,8 @@ enum DrawKind {
 	Cached,
 	Uncached,
 }
+
+pub type CacheId = Arc<usize>;
 
 pub struct Window {
 	window: winit::window::Window,
@@ -75,7 +79,12 @@ impl Window {
 		&self.inputs
 	}
 
-	pub fn clip(&mut self, instance: Instance) {
+	//Optional optimization
+	pub fn reserve(&mut self, n: usize) {
+		self.output.reserve(n);
+	}
+
+	pub fn queue(&mut self, instance: Instance) {
 		//clip unseen instances
 		if self.inputs.visible(instance) {
 			self.output.push(instance);
@@ -95,30 +104,24 @@ impl Window {
 		self.output.clear();
 	}
 
-	pub fn is_cached(&self, name: &'static str) -> bool {
-		self.renderer.is_cached(name)
+	pub fn cache(&mut self, instances: &[Instance]) -> CacheId {
+		self.renderer.cache(instances)
 	}
 
-	pub fn cache(&mut self, name: &'static str, instances: &[Instance]) {
-		self.renderer.cache(name, instances)
-	}
-
-
-	pub fn draw_cached(&mut self, name: &'static str, pos: (f32, f32), scale: f32) {
+	pub fn draw_cached(&mut self, id: &CacheId, pos: &Vector2<f32>, scale: f32) {
 		if self.draw_kind != DrawKind::Cached && !self.output.is_empty() {
 			self.draw();
 		}
 
-		let shift: cgmath::Vector2<f32> = pos.into();
 		self.renderer.set_uniform(glsl::Uniform {
 			ortho: Camera {
-				pos: self.inputs.camera.pos - shift,
+				pos: self.inputs.camera.pos - pos,
 				scale: self.inputs.camera.scale / scale,
 			}
 			.proj(self.inputs.aspect()),
 		});
 
-		self.renderer.draw_cached(name);
+		self.renderer.draw_cached(id);
 	}
 
 	pub fn submit(&mut self) {

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 pub struct RenderData {
 	pub uniform_buffer: wgpu::Buffer,
 	pub uniform_bg: wgpu::BindGroup,
@@ -10,5 +12,6 @@ pub struct RenderData {
 	pub texture_bg: wgpu::BindGroup,
 	pub nearest_sampler: wgpu::Sampler,
 	pub current_frame: Option<wgpu::SurfaceTexture>,
-	pub cached_buffers: fnv::FnvHashMap<&'static str, (usize, wgpu::BindGroup, wgpu::Buffer)>,
+	pub cached_buffers: fnv::FnvHashMap<Arc<usize>, (usize, wgpu::BindGroup, wgpu::Buffer)>,
+	pub cached_count: usize,
 }

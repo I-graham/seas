@@ -20,7 +20,7 @@ pub enum Action {
 use Texture::*;
 impl Puffin {
 	const SPOT_DIMS: (f32, f32) = (32., 16.);
-	const DENSITY: f32 = 1. / 80_000.;
+	const DENSITY: f32 = 1. / 800_000.;
 	const FLEE_DIST: f32 = 320.;
 	const SPEED: f32 = 60.0;
 	const SCARE_DIST: f32 = 60.0;

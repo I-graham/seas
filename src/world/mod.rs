@@ -16,14 +16,13 @@ pub struct World {
 	pub raft: Raft,
 }
 
-const MAP_SIZE: u32 = 500 * 32;
 impl Root for World {
 	type Texture = Texture;
 	type Signal = Signal;
 
 	fn init(_external: &External) -> Self {
 		Self {
-			map: Map::new(MAP_SIZE),
+			map: Map::new(),
 			raft: Raft::new(),
 		}
 	}

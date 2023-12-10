@@ -4,6 +4,8 @@ pub mod utils;
 
 pub use data::*;
 
+use std::sync::*;
+
 pub struct Renderer<UniformType: Copy + PartialEq, InstanceType> {
 	resources: resources::RenderResources2D<UniformType, InstanceType>,
 	render_data: data::RenderData,
@@ -111,6 +113,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			nearest_sampler: sampler,
 			current_frame: None,
 			cached_buffers: Default::default(),
+			cached_count: 0,
 		};
 
 		Self {
@@ -249,19 +252,19 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			});
 	}
 
-	pub fn is_cached(&self, name: &'static str) -> bool {
-		self.render_data.cached_buffers.contains_key(name)
+	pub fn is_cached(&self, id: &Arc<usize>) -> bool {
+		self.render_data.cached_buffers.contains_key(id)
 	}
 
-	pub fn cache(&mut self, name: &'static str, instances: &[InstanceType]) {
+	pub fn cache(&mut self, instances: &[InstanceType]) -> Arc<usize> {
 		use wgpu::util::*;
 		let buffer = self
 			.resources
 			.device
 			.create_buffer_init(&BufferInitDescriptor {
-				label: Some(name),
+				label: None,
 				contents: utils::to_char_slice(instances),
-				usage: wgpu::BufferUsages::STORAGE,
+				usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::STORAGE,
 			});
 
 		let bg = self
@@ -280,17 +283,22 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 				}],
 			});
 
+		let id = Arc::new(self.render_data.cached_count);
+		self.render_data.cached_count += 1;
+
 		self.render_data
 			.cached_buffers
-			.insert(name, (instances.len(), bg, buffer));
+			.insert(id.clone(), (instances.len(), bg, buffer));
+
+		id
 	}
 
-	pub fn draw_cached(&mut self, name: &'static str) {
+	pub fn draw_cached(&mut self, id: &Arc<usize>) {
 		self.set_uniform(self.uniform.expect("Uniform not given!"));
 
 		let view = &self.get_frame().texture.create_view(&Default::default());
 
-		let cached_buff = self.render_data.cached_buffers.get(&name).unwrap();
+		let cached_buff = self.render_data.cached_buffers.get(id).unwrap();
 
 		let mut render_pass =
 			self.render_data

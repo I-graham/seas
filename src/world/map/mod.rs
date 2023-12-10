@@ -11,17 +11,15 @@ use crate::eng::*;
 use crate::window::*;
 
 pub struct Map {
-	size: u32,
-	tilemap: TileMap,
+	tiles: TileMap,
 	waves: Vec<Wave>,
 	puffins: Vec<Puffin>,
 }
 
 impl Map {
-	pub fn new(size: u32) -> Self {
+	pub fn new() -> Self {
 		Self {
-			size,
-			tilemap: TileMap::new(Default::default()),
+			tiles: TileMap::new(Default::default()),
 			waves: vec![],
 			puffins: vec![],
 		}
@@ -51,7 +49,7 @@ impl GameObject for Map {
 			self.puffins.push(puffin)
 		}
 
-		self.tilemap.update(external, messenger);
+		self.tiles.update(external, messenger);
 
 		self.waves
 			.retain_mut(|wave| wave.update(external, messenger) != Some(wave::Action::Die));
@@ -63,7 +61,7 @@ impl GameObject for Map {
 	}
 
 	fn render(&self, win: &mut Window) {
-		self.tilemap.render(win);
+		self.tiles.render(win);
 		self.waves.iter().for_each(|wave| wave.render(win));
 		self.puffins.iter().for_each(|puffin| puffin.render(win));
 	}
