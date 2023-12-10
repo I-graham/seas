@@ -41,6 +41,13 @@ impl External {
 		}
 	}
 
+	//returns lower left and upper right corners
+	pub fn view_bounds(&self) -> (Vector2<f32>, Vector2<f32>) {
+		let cam = self.camera.pos;
+		let dims = self.view_dims() / 2.;
+		(cam - dims, cam + dims)
+	}
+
 	pub fn view_dims(&self) -> Vector2<f32> {
 		let k = 2. * self.camera.scale;
 

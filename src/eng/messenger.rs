@@ -4,7 +4,7 @@ use std::time::*;
 use super::{Grid, Griddable};
 
 pub trait SignalType: Copy {
-	type SignalTypes: Copy + From<Self> + Into<usize> + PartialEq;
+	type SignalKinds: Copy + From<Self> + Into<usize> + PartialEq;
 	const COUNT: usize;
 }
 
@@ -62,7 +62,7 @@ impl<S: SignalType> Messenger<S> {
 			if dispatch.pos.is_some() {
 				self.locals.insert((self.now, dispatch));
 			} else {
-				let ty = S::SignalTypes::from(dispatch.signal);
+				let ty = S::SignalKinds::from(dispatch.signal);
 				self.global[ty.into()].push((self.now, dispatch));
 			}
 		}
@@ -70,7 +70,7 @@ impl<S: SignalType> Messenger<S> {
 
 	pub fn global_receive<'a>(
 		&'a self,
-		types: &'a [S::SignalTypes],
+		types: &'a [S::SignalKinds],
 	) -> impl Iterator<Item = S> + 'a {
 		types
 			.iter()
@@ -82,12 +82,12 @@ impl<S: SignalType> Messenger<S> {
 		&'a self,
 		pos: (f32, f32),
 		radius: f32,
-		types: &'a [S::SignalTypes],
+		types: &'a [S::SignalKinds],
 	) -> impl Iterator<Item = ((f32, f32), S)> + 'a {
 		self.locals
 			.query_at(pos, radius)
 			.map(|&dispatch| (dispatch.pos(), dispatch.1.signal))
-			.filter(|(_, signal)| types.contains(&S::SignalTypes::from(*signal)))
+			.filter(|(_, signal)| types.contains(&S::SignalKinds::from(*signal)))
 	}
 }
 

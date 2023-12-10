@@ -11,7 +11,6 @@ pub enum Texture {
     PuffinPeck,
 	Raft,
 	Wave,
-	Wood,
 }
 
 impl TextureType for Texture {

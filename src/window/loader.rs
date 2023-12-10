@@ -32,7 +32,7 @@ pub fn load_textures<T: TextureType>() -> (image::RgbaImage, TextureMap) {
 		(norm_x, norm_y)
 	};
 
-	for (text, &(rotated, ul, lr)) in sorted_iter
+	for (text, &(ul, lr)) in sorted_iter
 		.iter()
 		.map(|(_index, text)| text)
 		.zip(&spritesheet.1)
@@ -40,21 +40,24 @@ pub fn load_textures<T: TextureType>() -> (image::RgbaImage, TextureMap) {
 		let (ulx, uly) = pixel_to_text_coord(ul);
 		let (lrx, lry) = pixel_to_text_coord(lr);
 
-		let texture = GLvec4(ulx, uly, lrx, lry);
+		//small shift to avoid atlas bleeding
+		const TINY_SHIFT: f32 = f32::EPSILON;
+		let texture = GLvec4(
+			ulx + TINY_SHIFT,
+			uly + TINY_SHIFT,
+			lrx - TINY_SHIFT,
+			lry - TINY_SHIFT,
+		);
 
-		let mut width = lr.0 as f32 - ul.0 as f32;
-		let mut height = lr.1 as f32 - ul.1 as f32;
-
-		if rotated {
-			std::mem::swap(&mut width, &mut height);
-		}
+		let width = (lr.0 - ul.0) as f32;
+		let height = (lr.1 - ul.1) as f32;
 
 		map.insert(
 			text.name(),
 			Instance {
 				texture,
 				scale: (width, height / text.frame_count() as f32).into(),
-				rotation: if rotated { 90. } else { 0. }.into(),
+				rotation: 0f32.into(),
 				..Default::default()
 			},
 		);

@@ -13,20 +13,20 @@ impl<World: Root> GameState<World> {
 	pub fn new(event_loop: &EventLoop<()>) -> Self {
 		let api = Window::new::<World::Texture>(event_loop);
 		Self {
-			world: World::init(api.inputs()),
+			world: World::init(api.external()),
 			messenger: Messenger::new(),
 			win: api,
 		}
 	}
 
 	pub fn step(&mut self) {
-		self.world.plan(self.win.inputs(), &self.messenger.sender());
-		self.world.update(self.win.inputs(), &self.messenger);
+		self.world.plan(self.win.external(), &self.messenger.sender());
+		self.win.external_mut().camera = self.world.camera(self.win.external());
+		self.world.update(self.win.external(), &self.messenger);
 
 		let now = std::time::Instant::now();
-		self.win.inputs_mut().update(now);
+		self.win.external_mut().update(now);
 		self.messenger.update(now);
-		self.win.inputs_mut().camera = self.world.camera(self.win.inputs());
 	}
 
 	pub fn draw(&mut self) {

@@ -29,23 +29,13 @@ impl Root for World {
 	}
 
 	fn camera(&self, inputs: &External) -> Camera {
+		let mut camera = Camera {
+			pos: self.raft.pos,
+			..inputs.camera
+		};
+		
 		use winit::event::VirtualKeyCode;
-		const CAM_MOVE_SPEED: f32 = 50.;
-
-		let mut camera = inputs.camera;
-
-		camera.pos.x += CAM_MOVE_SPEED
-			* inputs.delta
-			* (inputs.key(VirtualKeyCode::D).is_down() as i32
-				- inputs.key(VirtualKeyCode::A).is_down() as i32) as f32;
-
-		camera.pos.y += CAM_MOVE_SPEED
-			* inputs.delta
-			* (inputs.key(VirtualKeyCode::W).is_down() as i32
-				- inputs.key(VirtualKeyCode::S).is_down() as i32) as f32;
-
 		const CAM_SCALE_SPEED: f32 = 50.;
-
 		camera.scale += CAM_SCALE_SPEED
 			* inputs.delta
 			* (inputs.key(VirtualKeyCode::Q).is_down() as i32

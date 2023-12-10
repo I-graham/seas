@@ -1,7 +1,9 @@
 mod puffin;
+mod tilemap;
 mod wave;
 
 use puffin::*;
+use tilemap::*;
 use wave::*;
 
 use super::*;
@@ -10,16 +12,16 @@ use crate::window::*;
 
 pub struct Map {
 	size: u32,
+	tilemap: TileMap,
 	waves: Vec<Wave>,
 	puffins: Vec<Puffin>,
 }
 
 impl Map {
-	const BACKGROUND: GLvec4 = GLvec4(57., 120., 168., 255.);
-
 	pub fn new(size: u32) -> Self {
 		Self {
 			size,
+			tilemap: TileMap::new(Default::default()),
 			waves: vec![],
 			puffins: vec![],
 		}
@@ -49,6 +51,8 @@ impl GameObject for Map {
 			self.puffins.push(puffin)
 		}
 
+		self.tilemap.update(external, messenger);
+
 		self.waves
 			.retain_mut(|wave| wave.update(external, messenger) != Some(wave::Action::Die));
 
@@ -59,13 +63,7 @@ impl GameObject for Map {
 	}
 
 	fn render(&self, win: &mut Window) {
-		//Ocean
-		win.clip(Instance {
-			color_tint: Self::BACKGROUND.rgba(),
-			scale: GLvec2((self.size / 2) as f32, (self.size / 2) as f32),
-			..win.inputs().instance(crate::world::Texture::Flat)
-		});
-
+		self.tilemap.render(win);
 		self.waves.iter().for_each(|wave| wave.render(win));
 		self.puffins.iter().for_each(|puffin| puffin.render(win));
 	}

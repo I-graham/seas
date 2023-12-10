@@ -14,7 +14,7 @@ const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
 };
 
 #[derive(PartialEq, Eq)]
-enum DrawType {
+enum DrawKind {
 	Cached,
 	Uncached,
 }
@@ -23,7 +23,7 @@ pub struct Window {
 	window: winit::window::Window,
 	inputs: External,
 	output: Vec<Instance>,
-	draw_type: DrawType,
+	draw_kind: DrawKind,
 	renderer: reng::Renderer<glsl::Uniform, Instance>,
 }
 
@@ -62,16 +62,16 @@ impl Window {
 				now: Instant::now(),
 				delta: 0.,
 			},
-			draw_type: DrawType::Uncached,
+			draw_kind: DrawKind::Uncached,
 			output: vec![],
 		}
 	}
 
-	pub fn inputs_mut(&mut self) -> &mut External {
+	pub fn external_mut(&mut self) -> &mut External {
 		&mut self.inputs
 	}
 
-	pub fn inputs(&self) -> &External {
+	pub fn external(&self) -> &External {
 		&self.inputs
 	}
 
@@ -103,12 +103,13 @@ impl Window {
 		self.renderer.cache(name, instances)
 	}
 
+
 	pub fn draw_cached(&mut self, name: &'static str, pos: (f32, f32), scale: f32) {
-		if self.draw_type != DrawType::Cached && !self.output.is_empty() {
+		if self.draw_kind != DrawKind::Cached && !self.output.is_empty() {
 			self.draw();
 		}
 
-		let shift = cgmath::Vector2::<f32>::from(pos);
+		let shift: cgmath::Vector2<f32> = pos.into();
 		self.renderer.set_uniform(glsl::Uniform {
 			ortho: Camera {
 				pos: self.inputs.camera.pos - shift,

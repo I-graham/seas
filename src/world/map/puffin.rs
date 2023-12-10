@@ -20,7 +20,7 @@ pub enum Action {
 use Texture::*;
 impl Puffin {
 	const SPOT_DIMS: (f32, f32) = (32., 16.);
-	const DENSITY: f32 = 1. / 800_000.;
+	const DENSITY: f32 = 1. / 80_000.;
 	const FLEE_DIST: f32 = 320.;
 	const SPEED: f32 = 60.0;
 	const SCARE_DIST: f32 = 60.0;
@@ -87,7 +87,7 @@ impl Automaton for Puffin {
 		messenger: &Messenger<Signal>,
 	) -> Option<Self::FsmAction> {
 		use Signal::*;
-		type SignalTy = <Signal as SignalType>::SignalTypes;
+		type SignalTy = <Signal as SignalType>::SignalKinds;
 
 		let destination = self.heading.cast::<f32>().unwrap();
 		for message in messenger.local_receive(
@@ -202,12 +202,12 @@ impl Automaton for Puffin {
 	}
 
 	fn fsm_instance(&self, external: &External) -> Option<Instance> {
-		Some(
-			Instance {
-				position: self.position(external).into(),
-				..self.animation.frame(external)
-			}
-			.scale2(if self.flipped { -1. } else { 1. }, 1.),
-		)
+		let instance = Instance {
+			position: self.position(external).into(),
+			..self.animation.frame(external)
+		}
+		.scale2(if self.flipped { -1. } else { 1. }, 1.);
+
+		Some(instance)
 	}
 }

@@ -45,7 +45,7 @@ pub trait Automaton {
 	}
 
 	fn fsm_render(&self, win: &mut Window) {
-		if let Some(inst) = self.fsm_instance(win.inputs()) {
+		if let Some(inst) = self.fsm_instance(win.external()) {
 			win.clip(inst);
 		}
 	}

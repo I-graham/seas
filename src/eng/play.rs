@@ -51,26 +51,26 @@ pub fn play<World: Root>() -> ! {
 				}
 
 				WindowEvent::KeyboardInput { input, .. } => {
-					game.win.inputs_mut().capture_key(input);
+					game.win.external_mut().capture_key(input);
 				}
 
 				WindowEvent::MouseWheel { delta, .. } => {
 					use winit::dpi::PhysicalPosition;
 					use winit::event::MouseScrollDelta::*;
-					game.win.inputs_mut().scroll = match delta {
+					game.win.external_mut().scroll = match delta {
 						LineDelta(_hor, ver) => ver,
 						PixelDelta(PhysicalPosition { y, .. }) => y as f32,
 					};
 				}
 
 				WindowEvent::CursorMoved { position, .. } => {
-					let size = game.win.inputs().win_size;
-					game.win.inputs_mut().capture_mouse(&position, size);
+					let size = game.win.external().win_size;
+					game.win.external_mut().capture_mouse(&position, size);
 				}
 
 				WindowEvent::MouseInput { button, state, .. } => game
 					.win
-					.inputs_mut()
+					.external_mut()
 					.mouse_button(&button, state == winit::event::ElementState::Pressed),
 
 				WindowEvent::Destroyed => {
@@ -85,7 +85,7 @@ pub fn play<World: Root>() -> ! {
 				{
 					const FPS_FREQ: f64 = 5.;
 					frame_counter += 1;
-					let now = game.win.inputs().now;
+					let now = game.win.external().now;
 					let time = now.duration_since(prev).as_secs_f64();
 					if time > FPS_FREQ {
 						println!("fps: {}", (frame_counter as f64 / FPS_FREQ) as i32);

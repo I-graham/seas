@@ -39,7 +39,7 @@ pub trait GameObject {
 	}
 
 	fn render(&self, win: &mut Window) {
-		if let Some(inst) = self.instance(win.inputs()) {
+		if let Some(inst) = self.instance(win.external()) {
 			win.clip(inst);
 		}
 	}
