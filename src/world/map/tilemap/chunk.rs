@@ -18,8 +18,14 @@ impl Chunk {
 	//Size of a chunk, in pixels
 	pub const WIDTH: f32 = Self::DIMENSION as f32 * Tile::SIZE;
 
-	pub fn cell_id(v: Vector2<f32>) -> Vector2<i32> {
-		v.map(|d| (d / Chunk::WIDTH).floor() as i32)
+	pub fn chunk_id(v: Vector2<f32>) -> Vector2<i32> {
+		v.map(|d| d.div_euclid(Chunk::WIDTH) as i32)
+	}
+
+	pub fn tile_id(v: Vector2<f32>) -> (Vector2<i32>, Vector2<usize>) {
+		let chunk = v.map(|d| d.div_euclid(Chunk::WIDTH) as i32);
+		let tile = v.map(|d| (d.rem_euclid(Chunk::WIDTH) / Tile::SIZE) as usize);
+		(chunk, tile)
 	}
 
 	pub fn generate<F: NoiseFn<f64, 2>>(
@@ -27,24 +33,28 @@ impl Chunk {
 		cell_pos: Vector2<i32>,
 		noise: F,
 	) -> Self {
-		let cell = cell_pos.cast::<f64>().unwrap() * Self::WIDTH as f64;
+		let cell = cell_pos.cast::<f32>().unwrap() * Self::WIDTH;
 
 		let mut tiles: [[MaybeUninit<Tile>; Self::DIMENSION]; Self::DIMENSION] =
 			unsafe { MaybeUninit::uninit().assume_init() };
+
 		for (i, row) in tiles.iter_mut().enumerate() {
 			for (j, entry) in row.iter_mut().enumerate() {
-				let offset = vec2(i as f64 + 0.5, j as f64 + 0.5) * Tile::SIZE as f64;
+				let offset = vec2(i as f32 + 0.5, j as f32 + 0.5) * Tile::SIZE;
 
-				let pos = (cell + offset) / Chunk::WIDTH as f64;
+				let pos = ((cell + offset) / settings.scale).map(|d| d as f64);
 
-				let reading = noise.get((pos / settings.scale).into());
-				let height = reading.abs().powf(settings.height_pow) * reading.signum();
+				let reading = noise.get(pos.into()) as f32;
+				let height = reading.abs().powf(settings.height_pow) * reading.signum() as f32;
 
 				let tile = Tile {
+					height,
 					kind: if height > settings.sea_level {
 						TileKind::Land
-					} else {
+					} else if height > settings.deep_sea_level {
 						TileKind::Sea
+					} else {
+						TileKind::DeepSea
 					},
 				};
 

@@ -18,64 +18,6 @@ pub enum Action {
 }
 
 use Texture::*;
-impl Puffin {
-	const SPOT_DIMS: (f32, f32) = (32., 16.);
-	const DENSITY: f32 = 1. / 4_000_000.;
-	const FLEE_DIST: f32 = 320.;
-	const SPEED: f32 = 60.0;
-	const SCARE_DIST: f32 = 60.0;
-
-	pub fn maybe_spawn(external: &External) -> Option<Self> {
-		let v = external.view_dims() / 2.;
-
-		if probability(Self::DENSITY * external.delta * v.x * v.y) {
-			let pos = external.camera.pos;
-
-			let offset = v.map(|f| rand_in(-f, f));
-			let heading = snap_to_grid(pos + offset, Self::SPOT_DIMS);
-
-			let signum = offset.map(f32::signum);
-
-			let source = snap_to_grid(
-				heading.cast::<f32>().unwrap() + v.mul_element_wise(signum),
-				Self::SPOT_DIMS,
-			);
-
-			Some(Self {
-				source,
-				heading,
-				flipped: source.x < heading.x,
-				animation: Animation::new(
-					Texture::PuffinFlap,
-					1.,
-					curves::SIN_BOUNCE,
-					f32::INFINITY,
-				),
-				scared_of: None,
-			})
-		} else {
-			None
-		}
-	}
-
-	fn position(&self, external: &External) -> Vector2<f32> {
-		let fsource = self.source.cast::<f32>().unwrap();
-		let fheading = self.heading.cast::<f32>().unwrap();
-
-		if self.state() == PuffinFlap {
-			let dist = fsource.distance(fheading);
-
-			let total_time = dist / Self::SPEED;
-
-			let t = (self.animation.age(external.now) / total_time).min(1.);
-
-			(1. - t) * fsource + t * fheading
-		} else {
-			fsource
-		}
-	}
-}
-
 impl Automaton for Puffin {
 	type FsmScene = World;
 	type FsmAction = Action;
@@ -210,5 +152,63 @@ impl Automaton for Puffin {
 		.scale2(if self.flipped { -1. } else { 1. }, 1.);
 
 		Some(instance)
+	}
+}
+
+impl Puffin {
+	const SPOT_DIMS: (f32, f32) = (32., 16.);
+	const DENSITY: f32 = 1. / 4_000_000.;
+	const FLEE_DIST: f32 = 320.;
+	const SPEED: f32 = 60.0;
+	const SCARE_DIST: f32 = 60.0;
+
+	pub fn maybe_spawn(external: &External) -> Option<Self> {
+		let v = external.view_dims() / 2.;
+
+		if probability(Self::DENSITY * external.delta * v.x * v.y) {
+			let pos = external.camera.pos;
+
+			let offset = v.map(|f| rand_in(-f, f));
+			let heading = snap_to_grid(pos + offset, Self::SPOT_DIMS);
+
+			let signum = offset.map(f32::signum);
+
+			let source = snap_to_grid(
+				heading.cast::<f32>().unwrap() + v.mul_element_wise(signum),
+				Self::SPOT_DIMS,
+			);
+
+			Some(Self {
+				source,
+				heading,
+				flipped: source.x < heading.x,
+				animation: Animation::new(
+					Texture::PuffinFlap,
+					1.,
+					curves::SIN_BOUNCE,
+					f32::INFINITY,
+				),
+				scared_of: None,
+			})
+		} else {
+			None
+		}
+	}
+
+	fn position(&self, external: &External) -> Vector2<f32> {
+		let fsource = self.source.cast::<f32>().unwrap();
+		let fheading = self.heading.cast::<f32>().unwrap();
+
+		if self.state() == PuffinFlap {
+			let dist = fsource.distance(fheading);
+
+			let total_time = dist / Self::SPEED;
+
+			let t = (self.animation.age(external.now) / total_time).min(1.);
+
+			(1. - t) * fsource + t * fheading
+		} else {
+			fsource
+		}
 	}
 }

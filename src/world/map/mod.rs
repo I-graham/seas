@@ -41,7 +41,7 @@ impl GameObject for Map {
 		external: &External,
 		messenger: &Messenger<Signal>,
 	) -> Option<Self::Action> {
-		if let Some(wave) = Wave::maybe_spawn(external) {
+		if let Some(wave) = Wave::maybe_spawn(&self.tiles, external) {
 			self.waves.push(wave)
 		}
 
