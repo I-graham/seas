@@ -1,4 +1,4 @@
-use std::cell::OnceCell;
+use std::cell::Cell;
 use std::mem::MaybeUninit;
 
 use super::*;
@@ -6,9 +6,9 @@ use cgmath::*;
 use noise::*;
 
 pub struct Chunk {
-	cell_pos: Vector2<i32>,
-	tiles: [[Tile; Self::DIMENSION]; Self::DIMENSION],
-	cache: OnceCell<CacheId>,
+	pub tiles: [[Tile; Self::DIMENSION]; Self::DIMENSION],
+	pub cell_pos: Vector2<i32>,
+	cache: Cell<Option<CacheId>>,
 }
 
 impl Chunk {
@@ -37,8 +37,11 @@ impl Chunk {
 
 				let pos = (cell + offset) / Chunk::WIDTH as f64;
 
+				let reading = noise.get((pos / settings.scale).into());
+				let height = reading.abs().powf(settings.height_pow) * reading.signum();
+
 				let tile = Tile {
-					kind: if noise.get(pos.into()) > settings.sea_level {
+					kind: if height > settings.sea_level {
 						TileKind::Land
 					} else {
 						TileKind::Sea
@@ -54,7 +57,7 @@ impl Chunk {
 		Self {
 			cell_pos,
 			tiles,
-			cache: OnceCell::new(),
+			cache: None.into(),
 		}
 	}
 }
@@ -64,7 +67,7 @@ impl GameObject for Chunk {
 	type Action = ();
 
 	fn render(&self, win: &mut Window) {
-		let id = self.cache.get_or_init(|| {
+		let cache_id = self.cache.take().unwrap_or_else(|| {
 			let mut out = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
 
 			let cell = self.cell_pos.cast::<f32>().unwrap() * Self::WIDTH;
@@ -86,6 +89,11 @@ impl GameObject for Chunk {
 			win.cache(&out)
 		});
 
-		win.draw_cached(id, &vec2(0.,0.), 1.);
+		win.draw_cached(&cache_id, &vec2(0., 0.), 1.);
+		self.cache.set(Some(cache_id));
+	}
+
+	fn cleanup(&mut self) {
+		self.cache.take();
 	}
 }

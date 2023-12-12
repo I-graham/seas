@@ -36,6 +36,7 @@ impl<World: Root> GameState<World> {
 	}
 
 	pub fn cleanup(&mut self) {
-		self.world.cleanup()
+		self.world.cleanup();
+		self.win.clean_cache();
 	}
 }

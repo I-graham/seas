@@ -11,7 +11,7 @@ pub enum TileKind {
 }
 
 impl Tile {
-	pub const SIZE: f32 = 32f32;
+	pub const SIZE: f32 = 16f32;
 
 	pub fn color(&self) -> GLvec4 {
 		use TileKind::*;

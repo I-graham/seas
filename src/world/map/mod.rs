@@ -68,4 +68,8 @@ impl GameObject for Map {
 		self.waves.iter().for_each(|wave| wave.render(win));
 		self.puffins.iter().for_each(|puffin| puffin.render(win));
 	}
+
+	fn cleanup(&mut self) {
+		self.tiles.cleanup();
+	}
 }

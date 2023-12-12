@@ -57,4 +57,8 @@ impl Root for World {
 		self.map.render(win);
 		self.raft.render(win);
 	}
+
+	fn cleanup(&mut self) {
+		self.map.cleanup();
+	}
 }

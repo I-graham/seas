@@ -1,33 +1,22 @@
 mod chunk;
+mod settings;
 mod tile;
 
-pub use chunk::*;
+pub use settings::*;
 pub use tile::*;
 
 use super::*;
 use cgmath::*;
+use chunk::*;
 use fnv::FnvHashMap;
 use noise::*;
 
-#[derive(Clone, Copy)]
-pub struct TileMapSettings {
-	sea_level: f64,
-	seed: u32,
-}
-
+type Noise = noise::OpenSimplex;
 pub struct TileMap {
 	settings: TileMapSettings,
 	chunks: FnvHashMap<Vector2<i32>, Chunk>,
-	noise_fn: PerlinSurflet,
-}
-
-impl Default for TileMapSettings {
-	fn default() -> Self {
-		Self {
-			sea_level: 0.0,
-			seed: rand::random(),
-		}
-	}
+	noise_fn: Noise,
+	chunks_in_view: ((i32, i32), (i32, i32)),
 }
 
 impl TileMap {
@@ -36,11 +25,12 @@ impl TileMap {
 		Self {
 			settings,
 			chunks: Default::default(),
-			noise_fn: PerlinSurflet::default().set_seed(seed),
+			noise_fn: Noise::default().set_seed(seed),
+			chunks_in_view: Default::default(),
 		}
 	}
 
-	fn chunk_at(&mut self, cell: Vector2<i32>) -> &mut Chunk {
+	fn load_chunk(&mut self, cell: Vector2<i32>) -> &mut Chunk {
 		self.chunks
 			.entry(cell)
 			.or_insert_with(|| Chunk::generate(self.settings, cell, self.noise_fn))
@@ -58,25 +48,47 @@ impl GameObject for TileMap {
 	) -> Option<Self::Action> {
 		//Generate all chunks in view
 		let (ll, ur) = external.view_bounds();
-		let (llx, lly) = Chunk::cell_id(ll).into();
-		let (urx, ury) = Chunk::cell_id(ur).into();
-		for cx in llx - 1..=urx + 1 {
-			for cy in lly - 1..=ury + 1 {
-				self.chunk_at(vec2(cx, cy));
+		let lli: (i32, i32) = Chunk::cell_id(ll).into();
+		let uri: (i32, i32) = Chunk::cell_id(ur).into();
+
+		if (lli, uri) != self.chunks_in_view {
+			let (old_ll, old_ur) = self.chunks_in_view;
+			for cx in (lli.0..old_ll.0).chain(old_ur.0..=uri.0) {
+				for cy in lli.1..=uri.1 {
+					self.load_chunk(vec2(cx, cy));
+				}
+			}
+
+			for cx in lli.0..=uri.0 {
+				for cy in (lli.1..old_ll.1).chain(old_ur.1..=uri.1) {
+					self.load_chunk(vec2(cx, cy));
+				}
 			}
 		}
+
+		self.chunks_in_view = (lli, uri);
 
 		None
 	}
 
 	fn render(&self, win: &mut Window) {
-		let (ll, ur) = win.external().view_bounds();
-		let (llx, lly) = Chunk::cell_id(ll).into();
-		let (urx, ury) = Chunk::cell_id(ur).into();
-
-		for cx in llx..=urx {
-			for cy in lly..=ury {
+		let (ll, ur) = self.chunks_in_view;
+		for cx in ll.0..=ur.0 {
+			for cy in ll.1..=ur.1 {
 				self.chunks[&vec2(cx, cy)].render(win);
+			}
+		}
+	}
+
+	fn cleanup(&mut self) {
+		let (ll, ur) = self.chunks_in_view;
+
+		for chunk in self.chunks.values_mut() {
+			let cell = chunk.cell_pos;
+			let in_view = (ll.0..=ur.0).contains(&cell.x)
+						&& (ll.1..=ur.1).contains(&cell.y);
+			if !in_view {
+				chunk.cleanup();
 			}
 		}
 	}

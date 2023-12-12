@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod glsl;
 mod loader;
 mod reng;
@@ -120,6 +122,10 @@ impl Window {
 		});
 
 		self.renderer.draw_cached(id);
+	}
+
+	pub fn clean_cache(&mut self) {
+		self.renderer.clean_cache();
 	}
 
 	pub fn submit(&mut self) {

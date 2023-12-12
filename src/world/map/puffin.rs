@@ -20,7 +20,7 @@ pub enum Action {
 use Texture::*;
 impl Puffin {
 	const SPOT_DIMS: (f32, f32) = (32., 16.);
-	const DENSITY: f32 = 1. / 800_000.;
+	const DENSITY: f32 = 1. / 4_000_000.;
 	const FLEE_DIST: f32 = 320.;
 	const SPEED: f32 = 60.0;
 	const SCARE_DIST: f32 = 60.0;
@@ -162,17 +162,18 @@ impl Automaton for Puffin {
 				match self.scared_of {
 					Some(pos) => {
 						let current = self.source.cast::<f32>().unwrap();
-						let dir = (current - pos).normalize();
-						self.heading =
-							snap_to_grid(current + Self::FLEE_DIST * dir, Self::SPOT_DIMS);
+						let dir = (current - pos).normalize_to(Self::FLEE_DIST);
+						self.heading = snap_to_grid(current + dir, Self::SPOT_DIMS);
+						self.scared_of = None;
 					}
 					None =>
 					//Different x values to avoid unrealistic movement.
 					{
 						while self.heading.x == self.source.x {
+							let fsource = self.source.cast::<f32>().unwrap();
+
 							self.heading = snap_to_grid(
-								self.source.cast::<f32>().unwrap()
-									+ rand_in2d(-Self::FLEE_DIST, Self::FLEE_DIST),
+								fsource + rand_in2d(-Self::FLEE_DIST, Self::FLEE_DIST),
 								Self::SPOT_DIMS,
 							);
 						}

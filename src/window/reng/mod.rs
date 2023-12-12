@@ -323,6 +323,12 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 		drop(render_pass);
 	}
 
+	pub fn clean_cache(&mut self) {
+		self.render_data
+			.cached_buffers
+			.retain(|k, _| Arc::strong_count(k) > 1);
+	}
+
 	pub fn draw(&mut self, instances: &[InstanceType]) {
 		self.set_uniform(self.uniform.expect("Uniform not given!"));
 

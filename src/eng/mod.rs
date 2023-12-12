@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod messenger;
 pub mod play;
 pub mod state;
