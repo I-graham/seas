@@ -20,6 +20,11 @@ pub trait Root: Sized + 'static {
 
 pub fn play<World: Root>() -> ! {
 	let mut tracing_guard = if cfg!(feature = "profile") {
+		//Generate image with inferno:
+		//Windows:
+		//type tracing.folded | inferno-flamegraph --flamechart > tracing-flamegraph.svg
+		//Linux:
+		//cat tracing.folded | inferno-flamegraph --flamechart > tracing-flamegraph.svg
 		use tracing_flame::FlameLayer;
 		use tracing_subscriber::prelude::*;
 
@@ -91,6 +96,9 @@ pub fn play<World: Root>() -> ! {
 						println!("fps: {}", (frame_counter as f64 / FPS_FREQ) as i32);
 						prev = now;
 						frame_counter = 0;
+
+						let span = trace_span!("Cleanup");
+						let _guard = span.enter(); 
 						game.cleanup();
 					}
 				}

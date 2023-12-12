@@ -15,7 +15,7 @@ pub struct Renderer<UniformType: Copy + PartialEq, InstanceType> {
 }
 
 impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, InstanceType> {
-	const CHUNK_SIZE: usize = 50_000;
+	const CHUNK_SIZE: usize = 10_000;
 
 	const DEFAULT_CHUNK_SIZE: wgpu::BufferAddress =
 		(Self::CHUNK_SIZE * std::mem::size_of::<InstanceType>()) as wgpu::BufferAddress;

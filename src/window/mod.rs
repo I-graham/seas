@@ -6,8 +6,8 @@ mod reng;
 mod types;
 
 pub use glsl::*;
-pub use types::*;
 pub use reng::CacheId;
+pub use types::*;
 
 use cgmath::*;
 use std::time::Instant;
@@ -97,6 +97,7 @@ impl Window {
 	}
 
 	pub fn draw(&mut self) {
+		self.draw_kind = DrawKind::Uncached;
 		self.renderer.set_uniform(glsl::Uniform {
 			ortho: self.inputs.camera.proj(self.inputs.aspect()),
 		});
@@ -112,6 +113,7 @@ impl Window {
 		if self.draw_kind != DrawKind::Cached && !self.output.is_empty() {
 			self.draw();
 		}
+		self.draw_kind = DrawKind::Cached;
 
 		self.renderer.set_uniform(glsl::Uniform {
 			ortho: Camera {

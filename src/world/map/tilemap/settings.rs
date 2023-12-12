@@ -10,9 +10,9 @@ impl Default for TileMapSettings {
 	fn default() -> Self {
 		Self {
 			seed: rand::random(),
-			sea_level: 0.35,
-			height_pow: 0.75,
-			scale: 1.,
+			sea_level: 0.3,
+			height_pow: 0.85,
+			scale: 0.75,
 		}
 	}
 }

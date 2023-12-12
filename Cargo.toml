@@ -26,6 +26,7 @@ tracing-flame = "0.2.0"
 
 [features]
 compile-shaders = ["shaderc"]
+profile = []
 
 [build-dependencies]
 shaderc = { version="0.8", optional=true } #requires git, python, ninja (on windows), & a c++11 compiler to be in path variable
