@@ -65,7 +65,6 @@ impl GameObject for TileMap {
 		let lli = Chunk::chunk_id(ll);
 		let uri = Chunk::chunk_id(ur);
 
-		
 		if [lli, uri] != self.chunks_in_view {
 			let [old_ll, old_ur] = self.chunks_in_view;
 			for cx in (lli.x..old_ll.x).chain(old_ur.x..=uri.x) {
@@ -87,6 +86,9 @@ impl GameObject for TileMap {
 	}
 
 	fn render(&self, win: &mut Window) {
+		let span = trace_span!("Rendering Chunks");
+		let _guard = span.enter();
+
 		let [ll, ur] = self.chunks_in_view;
 		for cx in ll.x..=ur.x {
 			for cy in ll.y..=ur.y {

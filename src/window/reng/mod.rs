@@ -312,13 +312,14 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 					depth_stencil_attachment: None,
 				});
 
+		render_pass.set_pipeline(&self.resources.pipeline);
+		render_pass.set_bind_group(0, &self.render_data.uniform_bg, &[]);
+		render_pass.set_bind_group(2, &self.render_data.texture_bg, &[]);
+		
 		for id in ids {
 			let cached_buff = self.render_data.cached_buffers.get(id).unwrap();
 
-			render_pass.set_pipeline(&self.resources.pipeline);
-			render_pass.set_bind_group(0, &self.render_data.uniform_bg, &[]);
 			render_pass.set_bind_group(1, &cached_buff.1, &[]);
-			render_pass.set_bind_group(2, &self.render_data.texture_bg, &[]);
 			render_pass.draw(0..5, 0..cached_buff.0 as u32);
 		}
 

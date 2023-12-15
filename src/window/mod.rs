@@ -87,6 +87,11 @@ impl Window {
 	pub fn queue(&mut self, instance: Instance) {
 		//clip unseen instances
 		if self.inputs.visible(instance) {
+			if let DrawKind::Cached(reqs) = &self.draw_kind {
+				self.renderer.draw_cached(reqs);
+				self.draw_kind = DrawKind::Uncached;
+			}
+			
 			self.output.push(instance);
 		}
 	}
@@ -102,11 +107,13 @@ impl Window {
 			self.draw_kind = DrawKind::Uncached;
 		}
 
-		self.renderer.set_uniform(glsl::Uniform {
-			ortho: self.inputs.camera.proj(self.inputs.aspect()),
-		});
-		self.renderer.draw(&self.output);
-		self.output.clear();
+		if !self.output.is_empty() {
+			self.renderer.set_uniform(glsl::Uniform {
+				ortho: self.inputs.camera.proj(self.inputs.aspect()),
+			});
+			self.renderer.draw(&self.output);
+			self.output.clear();
+		}
 	}
 
 	pub fn cache(&mut self, instances: &[Instance]) -> CacheId {

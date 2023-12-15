@@ -12,8 +12,8 @@ pub struct Raft {
 
 impl Raft {
 	const SIZE: (f32, f32) = (32., 32.);
-	const ACCELERATION: f32 = 2.5;
-	const TOP_SPEED: f32 = 100.0;
+	const ACCELERATION: f32 = 20.;
+	const TOP_SPEED: f32 = 500.0;
 
 	pub fn new() -> Self {
 		Self {

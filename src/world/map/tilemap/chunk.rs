@@ -5,14 +5,14 @@ use cgmath::*;
 use noise::*;
 
 pub struct Chunk {
-	tiles: Box<[Tile; Self::DIMENSION * Self::DIMENSION]>,
 	pub cell_pos: Vector2<i32>,
+	tiles: Box<[Tile; Self::DIMENSION * Self::DIMENSION]>,
 	cache: Cell<Option<CacheId>>,
 }
 
 impl Chunk {
 	//# of tiles in a chunk row
-	pub const DIMENSION: usize = 32;
+	pub const DIMENSION: usize = 64;
 
 	//Size of a chunk, in pixels
 	pub const WIDTH: f32 = Self::DIMENSION as f32 * Tile::SIZE;
@@ -68,9 +68,6 @@ impl GameObject for Chunk {
 	type Action = ();
 
 	fn render(&self, win: &mut Window) {
-		let span = trace_span!("Rendering Chunk");
-		let _guard = span.enter();
-
 		let cache_id = self.cache.take().unwrap_or_else(|| {
 			let mut out = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
 
