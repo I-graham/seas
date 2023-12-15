@@ -1,6 +1,8 @@
 use super::*;
 
 use crate::window::Window;
+#[cfg(feature = "profile")]
+use tracing::instrument;
 use winit::event_loop::EventLoop;
 
 pub struct GameState<World: Root> {
@@ -20,7 +22,8 @@ impl<World: Root> GameState<World> {
 	}
 
 	pub fn step(&mut self) {
-		self.world.plan(self.win.external(), &self.messenger.sender());
+		self.world
+			.plan(self.win.external(), &self.messenger.sender());
 		self.win.external_mut().camera = self.world.camera(self.win.external());
 		self.world.update(self.win.external(), &self.messenger);
 
@@ -35,6 +38,7 @@ impl<World: Root> GameState<World> {
 		self.win.draw();
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cleanup"))]
 	pub fn cleanup(&mut self) {
 		self.world.cleanup();
 		self.win.clean_cache();

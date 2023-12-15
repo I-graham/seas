@@ -10,6 +10,8 @@ use cgmath::*;
 use chunk::*;
 use fnv::FnvHashMap;
 use noise::*;
+#[cfg(feature = "profile")]
+use tracing::instrument;
 
 type Noise = noise::OpenSimplex;
 
@@ -85,10 +87,8 @@ impl GameObject for TileMap {
 		None
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "TileMap"))]
 	fn render(&self, win: &mut Window) {
-		let span = trace_span!("Rendering Chunks");
-		let _guard = span.enter();
-
 		let [ll, ur] = self.chunks_in_view;
 		for cx in ll.x..=ur.x {
 			for cy in ll.y..=ur.y {

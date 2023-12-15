@@ -7,6 +7,8 @@ use crate::window::*;
 use boats::*;
 use map::*;
 use tracing::trace_span;
+#[cfg(feature = "profile")]
+use tracing::instrument;
 
 pub use super::eng::*;
 pub use signal::Signal;
@@ -44,23 +46,20 @@ impl Root for World {
 		camera
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Planning"))]
 	fn plan(&self, external: &External, messenger: &Sender<Dispatch<Signal>>) {
-		let span = trace_span!("Planning");
-		let _guard = span.enter();
 		self.map.plan(self, external, messenger);
 		self.raft.plan(self, external, messenger);
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating"))]
 	fn update(&mut self, external: &External, messenger: &Messenger<Signal>) {
-		let span = trace_span!("Updating");
-		let _guard = span.enter();
 		self.map.update(external, messenger);
 		self.raft.update(external, messenger);
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Rendering"))]
 	fn render(&self, win: &mut Window) {
-		let span = trace_span!("Rendering");
-		let _guard = span.enter();
 		self.map.render(win);
 		self.raft.render(win);
 	}

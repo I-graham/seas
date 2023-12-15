@@ -1,4 +1,3 @@
-use tracing::trace_span;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoop;
 
@@ -97,19 +96,13 @@ pub fn play<World: Root>() -> ! {
 						prev = now;
 						frame_counter = 0;
 
-						let span = trace_span!("Cleanup");
-						let _guard = span.enter(); 
 						game.cleanup();
 					}
 				}
 
 				game.step();
 				game.draw();
-				{
-					let span = trace_span!("Presenting.");
-					let _gaurd = span.enter();
-					game.win.submit();
-				}
+				game.win.submit();
 			}
 
 			_ => {}

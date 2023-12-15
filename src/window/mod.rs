@@ -11,6 +11,8 @@ pub use types::*;
 
 use cgmath::*;
 use std::time::Instant;
+#[cfg(feature = "profile")]
+use tracing::instrument;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
 	width: 800.0,
@@ -91,7 +93,7 @@ impl Window {
 				self.renderer.draw_cached(reqs);
 				self.draw_kind = DrawKind::Uncached;
 			}
-			
+
 			self.output.push(instance);
 		}
 	}
@@ -154,6 +156,7 @@ impl Window {
 		self.renderer.clean_cache();
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name="Presenting"))]
 	pub fn submit(&mut self) {
 		self.renderer.submit();
 	}
