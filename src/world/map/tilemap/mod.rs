@@ -79,8 +79,6 @@ impl GameObject for TileMap {
 					self.load_chunk(vec2(cx, cy));
 				}
 			}
-
-			dbg!((uri.x-lli.x)*(uri.y-lli.y));
 		}
 
 		self.chunks_in_view = [lli, uri];

@@ -19,7 +19,7 @@ const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
 
 #[derive(PartialEq, Eq)]
 enum DrawKind {
-	Cached,
+	Cached(Vec<CacheId>),
 	Uncached,
 }
 
@@ -97,7 +97,11 @@ impl Window {
 	}
 
 	pub fn draw(&mut self) {
-		self.draw_kind = DrawKind::Uncached;
+		if let DrawKind::Cached(reqs) = &self.draw_kind {
+			self.renderer.draw_cached(reqs);
+			self.draw_kind = DrawKind::Uncached;
+		}
+
 		self.renderer.set_uniform(glsl::Uniform {
 			ortho: self.inputs.camera.proj(self.inputs.aspect()),
 		});
@@ -110,20 +114,33 @@ impl Window {
 	}
 
 	pub fn draw_cached(&mut self, id: &CacheId, pos: &Vector2<f32>, scale: f32) {
-		if self.draw_kind != DrawKind::Cached && !self.output.is_empty() {
-			self.draw();
-		}
-		self.draw_kind = DrawKind::Cached;
-
-		self.renderer.set_uniform(glsl::Uniform {
+		let uniform = glsl::Uniform {
 			ortho: Camera {
 				pos: self.inputs.camera.pos - pos,
 				scale: self.inputs.camera.scale / scale,
 			}
 			.proj(self.inputs.aspect()),
-		});
+		};
 
-		self.renderer.draw_cached(id);
+		let id = id.clone();
+		match &mut self.draw_kind {
+			DrawKind::Cached(reqs) => {
+				if Some(uniform) == self.renderer.uniform {
+					reqs.push(id);
+				} else {
+					self.renderer.draw_cached(reqs);
+					self.renderer.set_uniform(uniform);
+					self.draw_kind = DrawKind::Cached(vec![id]);
+				}
+			}
+			DrawKind::Uncached => {
+				if !self.output.is_empty() {
+					self.draw();
+				}
+				self.renderer.set_uniform(uniform);
+				self.draw_kind = DrawKind::Cached(vec![id]);
+			}
+		}
 	}
 
 	pub fn clean_cache(&mut self) {
