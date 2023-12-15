@@ -2,3 +2,5 @@
 Cargo.lock
 atlas.png
 flamegraph.svg
+tracing.folded
+tracing-flamegraph.svg
