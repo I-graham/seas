@@ -41,7 +41,7 @@ impl TileMap {
 		let (chunk_id, tile_id) = Chunk::tile_id(pos);
 		let [i, j] = tile_id.into();
 
-		self.chunks.get(&chunk_id).map(|chunk| &chunk.tiles[i][j])
+		self.chunks.get(&chunk_id).map(|chunk| chunk.get_tile(i, j))
 	}
 
 	fn load_chunk(&mut self, cell: Vector2<i32>) -> &mut Chunk {
@@ -65,6 +65,7 @@ impl GameObject for TileMap {
 		let lli = Chunk::chunk_id(ll);
 		let uri = Chunk::chunk_id(ur);
 
+		
 		if [lli, uri] != self.chunks_in_view {
 			let [old_ll, old_ur] = self.chunks_in_view;
 			for cx in (lli.x..old_ll.x).chain(old_ur.x..=uri.x) {
@@ -78,6 +79,8 @@ impl GameObject for TileMap {
 					self.load_chunk(vec2(cx, cy));
 				}
 			}
+
+			dbg!((uri.x-lli.x)*(uri.y-lli.y));
 		}
 
 		self.chunks_in_view = [lli, uri];

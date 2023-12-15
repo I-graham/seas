@@ -12,6 +12,14 @@ pub struct Instance {
 }
 
 impl Instance {
+	pub fn scale_rgba(self) -> Self {
+		let GLvec4(ulx, uly, lrx, lry) = self.color_tint;
+		Self {
+			color_tint: GLvec4(ulx / 255., uly / 255., lrx / 255., lry / 255.),
+			..self
+		}
+	}
+
 	pub fn scale(self, r: f32) -> Self {
 		self.scale2(r, r)
 	}

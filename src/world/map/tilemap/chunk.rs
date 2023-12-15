@@ -1,22 +1,25 @@
 use std::cell::Cell;
-use std::mem::MaybeUninit;
 
 use super::*;
 use cgmath::*;
 use noise::*;
 
 pub struct Chunk {
-	pub tiles: [[Tile; Self::DIMENSION]; Self::DIMENSION],
+	tiles: Box<[Tile; Self::DIMENSION * Self::DIMENSION]>,
 	pub cell_pos: Vector2<i32>,
 	cache: Cell<Option<CacheId>>,
 }
 
 impl Chunk {
 	//# of tiles in a chunk row
-	pub const DIMENSION: usize = 128;
+	pub const DIMENSION: usize = 32;
 
 	//Size of a chunk, in pixels
 	pub const WIDTH: f32 = Self::DIMENSION as f32 * Tile::SIZE;
+
+	pub fn get_tile(&self, i: usize, j: usize) -> &Tile {
+		&self.tiles[i * Self::DIMENSION + j]
+	}
 
 	pub fn chunk_id(v: Vector2<f32>) -> Vector2<i32> {
 		v.map(|d| d.div_euclid(Chunk::WIDTH) as i32)
@@ -35,34 +38,22 @@ impl Chunk {
 	) -> Self {
 		let cell = cell_pos.cast::<f32>().unwrap() * Self::WIDTH;
 
-		let mut tiles: [[MaybeUninit<Tile>; Self::DIMENSION]; Self::DIMENSION] =
-			unsafe { MaybeUninit::uninit().assume_init() };
+		let mut tiles = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
 
-		for (i, row) in tiles.iter_mut().enumerate() {
-			for (j, entry) in row.iter_mut().enumerate() {
+		for i in 0..Self::DIMENSION {
+			for j in 0..Self::DIMENSION {
 				let offset = vec2(i as f32 + 0.5, j as f32 + 0.5) * Tile::SIZE;
 
 				let pos = ((cell + offset) / settings.scale).map(|d| d as f64);
 
 				let reading = noise.get(pos.into()) as f32;
-				let height = reading.abs().powf(settings.height_pow) * reading.signum() as f32;
 
-				let tile = Tile {
-					height,
-					kind: if height > settings.sea_level {
-						TileKind::Land
-					} else if height > settings.deep_sea_level {
-						TileKind::Sea
-					} else {
-						TileKind::DeepSea
-					},
-				};
-
-				entry.write(tile);
+				tiles.push(Tile::generate(&settings, reading));
 			}
 		}
 
-		let tiles = unsafe { std::mem::transmute(tiles) };
+		let boxed_tiles = tiles.into_boxed_slice();
+		let tiles: Box<[Tile; Self::DIMENSION * Self::DIMENSION]> = boxed_tiles.try_into().unwrap();
 
 		Self {
 			cell_pos,
@@ -85,15 +76,18 @@ impl GameObject for Chunk {
 
 			let cell = self.cell_pos.cast::<f32>().unwrap() * Self::WIDTH;
 
-			for (i, row) in self.tiles.iter().enumerate() {
-				for (j, tile) in row.iter().enumerate() {
+			for i in 0..Self::DIMENSION {
+				for j in 0..Self::DIMENSION {
+					let tile = self.get_tile(i, j);
+
 					let offset = vec2(i as f32 + 0.5, j as f32 + 0.5) * Tile::SIZE;
 					out.push(
 						Instance {
 							position: (cell + offset).into(),
-							color_tint: tile.color(),
+							color_tint: tile.color,
 							..win.external().instance(Texture::Flat)
 						}
+						.scale_rgba()
 						.scale(Tile::SIZE),
 					);
 				}

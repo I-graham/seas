@@ -1,11 +1,14 @@
+use super::*;
 use crate::window::GLvec4;
 
+#[derive(Debug)]
 pub struct Tile {
 	pub kind: TileKind,
 	pub height: f32,
+	pub color: GLvec4,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TileKind {
 	Land,
 	Sea,
@@ -13,14 +16,60 @@ pub enum TileKind {
 }
 
 impl Tile {
-	pub const SIZE: f32 = 16f32;
+	pub const SIZE: f32 = 32f32;
 
-	pub fn color(&self) -> GLvec4 {
+	pub fn generate(settings: &TileMapSettings, reading: f32) -> Self {
+		let height = reading.abs().powf(settings.height_pow) * reading.signum();
+
+		let boundaries = [
+			(TileKind::Land, settings.sea_level),
+			(TileKind::Sea, settings.sea_level),
+			(TileKind::Sea, settings.deep_sea_level),
+			(TileKind::DeepSea, settings.bottom_of_sea),
+			(TileKind::DeepSea, f32::NEG_INFINITY),
+		];
+
+		let mut kind = None;
+		let mut upper_kind = boundaries[0].0;
+		let mut upper_bound = f32::INFINITY;
+		let mut color = vec4(0., 0., 0., 0.);
+
+		for (tile_kind, boundary) in boundaries {
+			let lower_color: Vector4<f32> = tile_kind.color().into();
+			let upper_color: Vector4<f32> = upper_kind.color().into();
+			if height > boundary {
+				kind = Some(tile_kind);
+
+				let t = (height - boundary) / (upper_bound - boundary);
+				let t = t.max(0.).min(1.);
+
+				color = upper_color * t + lower_color * (1. - t);
+
+				break;
+			} else {
+				upper_bound = boundary;
+				upper_kind = tile_kind;
+			}
+		}
+
+		let kind = kind.unwrap();
+		let color = color.into();
+
+		Self {
+			height,
+			kind,
+			color,
+		}
+	}
+}
+
+impl TileKind {
+	pub fn color(&self) -> (f32, f32, f32, f32) {
 		use TileKind::*;
-		match &self.kind {
-			Land => GLvec4(33., 200., 132., 255.),
-			Sea => GLvec4(57., 120., 168., 255.),
-			DeepSea => GLvec4(15., 50., 70., 255.)
-		}.rgba()
+		match self {
+			Land => (33., 200., 132., 255.),
+			Sea => (57., 120., 168., 255.),
+			DeepSea => (15., 50., 70., 255.),
+		}
 	}
 }

@@ -41,6 +41,8 @@ impl GameObject for Map {
 		external: &External,
 		messenger: &Messenger<Signal>,
 	) -> Option<Self::Action> {
+		self.tiles.update(external, messenger);
+
 		if let Some(wave) = Wave::maybe_spawn(&self.tiles, external) {
 			self.waves.push(wave)
 		}
@@ -48,8 +50,6 @@ impl GameObject for Map {
 		if let Some(puffin) = Puffin::maybe_spawn(external) {
 			self.puffins.push(puffin)
 		}
-
-		self.tiles.update(external, messenger);
 
 		self.waves
 			.retain_mut(|wave| wave.update(external, messenger) != Some(wave::Action::Die));
@@ -64,7 +64,6 @@ impl GameObject for Map {
 		self.tiles.render(win);
 
 		win.reserve(self.waves.len() + self.puffins.len());
-
 		self.waves.iter().for_each(|wave| wave.render(win));
 		self.puffins.iter().for_each(|puffin| puffin.render(win));
 	}

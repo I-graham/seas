@@ -35,7 +35,7 @@ impl Root for World {
 		};
 
 		use winit::event::VirtualKeyCode;
-		const CAM_SCALE_SPEED: f32 = 50.;
+		const CAM_SCALE_SPEED: f32 = 500.;
 		camera.scale += CAM_SCALE_SPEED
 			* inputs.delta
 			* (inputs.key(VirtualKeyCode::Q).is_down() as i32

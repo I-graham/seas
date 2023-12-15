@@ -35,7 +35,7 @@ impl GameObject for Wave {
 
 impl Wave {
 	pub fn maybe_spawn(map: &TileMap, external: &External) -> Option<Self> {
-		const WAVE_DENSITY: f32 = 1. / 20_000.;
+		const WAVE_DENSITY: f32 = 1. / 80_000.;
 		let v = external.view_dims() / 2.;
 		let cam = external.camera.pos;
 		let offset = v.map(|f| rand_in(-f, f));

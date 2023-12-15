@@ -5,6 +5,7 @@ pub struct TileMapSettings {
 	pub scale: f32,
 	pub sea_level: f32,
 	pub deep_sea_level: f32,
+	pub bottom_of_sea: f32,
 }
 
 impl Default for TileMapSettings {
@@ -15,6 +16,7 @@ impl Default for TileMapSettings {
 			scale: 1024.,
 			sea_level: 0.35,
 			deep_sea_level: 0.15,
+			bottom_of_sea: -0.5,
 		}
 	}
 }
