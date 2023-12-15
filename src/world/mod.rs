@@ -6,7 +6,6 @@ mod texture;
 use crate::window::*;
 use boats::*;
 use map::*;
-use tracing::trace_span;
 #[cfg(feature = "profile")]
 use tracing::instrument;
 
@@ -15,7 +14,7 @@ pub use signal::Signal;
 pub use texture::Texture;
 
 pub struct World {
-	pub map: Map,
+	pub env: Environment,
 	pub raft: Raft,
 }
 
@@ -25,7 +24,7 @@ impl Root for World {
 
 	fn init(_external: &External) -> Self {
 		Self {
-			map: Map::new(),
+			env: Environment::new(),
 			raft: Raft::new(),
 		}
 	}
@@ -48,23 +47,23 @@ impl Root for World {
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Planning"))]
 	fn plan(&self, external: &External, messenger: &Sender<Dispatch<Signal>>) {
-		self.map.plan(self, external, messenger);
+		self.env.plan(self, external, messenger);
 		self.raft.plan(self, external, messenger);
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating"))]
 	fn update(&mut self, external: &External, messenger: &Messenger<Signal>) {
-		self.map.update(external, messenger);
+		self.env.update(external, messenger);
 		self.raft.update(external, messenger);
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Rendering"))]
 	fn render(&self, win: &mut Window) {
-		self.map.render(win);
+		self.env.render(win);
 		self.raft.render(win);
 	}
 
 	fn cleanup(&mut self) {
-		self.map.cleanup();
+		self.env.cleanup();
 	}
 }

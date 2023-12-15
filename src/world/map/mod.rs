@@ -10,13 +10,13 @@ use super::*;
 use crate::eng::*;
 use crate::window::*;
 
-pub struct Map {
+pub struct Environment {
 	tiles: TileMap,
 	waves: Vec<Wave>,
 	puffins: Vec<Puffin>,
 }
 
-impl Map {
+impl Environment {
 	pub fn new() -> Self {
 		Self {
 			tiles: TileMap::new(Default::default()),
@@ -26,7 +26,7 @@ impl Map {
 	}
 }
 
-impl GameObject for Map {
+impl GameObject for Environment {
 	type Scene = World;
 	type Action = ();
 
@@ -60,21 +60,13 @@ impl GameObject for Map {
 		None
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Environment"))]
 	fn render(&self, win: &mut Window) {
-		{
-			let span = trace_span!("Map");
-			let _guard = span.enter();
+		self.tiles.render(win);
 
-			self.tiles.render(win);
-		}
-
-		{
-			let span = trace_span!("Waves + Puffin");
-			let _guard = span.enter();
-			win.reserve(self.waves.len() + self.puffins.len());
-			self.waves.iter().for_each(|wave| wave.render(win));
-			self.puffins.iter().for_each(|puffin| puffin.render(win));
-		}
+		win.reserve(self.waves.len() + self.puffins.len());
+		self.waves.iter().for_each(|wave| wave.render(win));
+		self.puffins.iter().for_each(|puffin| puffin.render(win));
 	}
 
 	fn cleanup(&mut self) {
