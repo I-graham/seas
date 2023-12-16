@@ -45,19 +45,19 @@ impl Root for World {
 		camera
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Planning"))]
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Planning World"))]
 	fn plan(&self, external: &External, messenger: &Sender<Dispatch<Signal>>) {
 		self.env.plan(self, external, messenger);
 		self.raft.plan(self, external, messenger);
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating"))]
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating World"))]
 	fn update(&mut self, external: &External, messenger: &Messenger<Signal>) {
 		self.env.update(external, messenger);
 		self.raft.update(external, messenger);
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Rendering"))]
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "World Rendering"))]
 	fn render(&self, win: &mut Window) {
 		self.env.render(win);
 		self.raft.render(win);

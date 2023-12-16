@@ -21,7 +21,15 @@ impl<World: Root> GameState<World> {
 		}
 	}
 
-	pub fn step(&mut self) {
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Frame"))]
+	pub fn frame(&mut self) {
+		self.step();
+		self.draw();
+		self.win.submit();
+	}
+
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Game Step"))]
+	fn step(&mut self) {
 		self.world
 			.plan(self.win.external(), &self.messenger.sender());
 		self.win.external_mut().camera = self.world.camera(self.win.external());
@@ -32,7 +40,8 @@ impl<World: Root> GameState<World> {
 		self.messenger.update(now);
 	}
 
-	pub fn draw(&mut self) {
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Draw Frame"))]
+	fn draw(&mut self) {
 		self.win.clear();
 		self.world.render(&mut self.win);
 		self.win.draw();

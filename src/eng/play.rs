@@ -86,23 +86,19 @@ pub fn play<World: Root>() -> ! {
 			},
 
 			Event::MainEventsCleared => {
-				{
-					const FPS_FREQ: f64 = 5.;
-					frame_counter += 1;
-					let now = game.win.external().now;
-					let time = now.duration_since(prev).as_secs_f64();
-					if time > FPS_FREQ {
-						println!("fps: {}", (frame_counter as f64 / FPS_FREQ) as i32);
-						prev = now;
-						frame_counter = 0;
+				const FPS_FREQ: f64 = 5.;
+				frame_counter += 1;
+				let now = game.win.external().now;
+				let time = now.duration_since(prev).as_secs_f64();
+				if time > FPS_FREQ {
+					println!("fps: {}", (frame_counter as f64 / FPS_FREQ) as i32);
+					prev = now;
+					frame_counter = 0;
 
-						game.cleanup();
-					}
+					game.cleanup();
 				}
 
-				game.step();
-				game.draw();
-				game.win.submit();
+				game.frame();
 			}
 
 			_ => {}
