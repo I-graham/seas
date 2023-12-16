@@ -47,14 +47,14 @@ impl Root for World {
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Planning World"))]
 	fn plan(&self, external: &External, messenger: &Sender<Dispatch<Signal>>) {
-		self.env.plan(self, external, messenger);
 		self.raft.plan(self, external, messenger);
+		self.env.plan(self, external, messenger);
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating World"))]
 	fn update(&mut self, external: &External, messenger: &Messenger<Signal>) {
-		self.env.update(external, messenger);
 		self.raft.update(external, messenger);
+		self.env.update(external, messenger);
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "World Rendering"))]

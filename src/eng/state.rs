@@ -32,8 +32,8 @@ impl<World: Root> GameState<World> {
 	fn step(&mut self) {
 		self.world
 			.plan(self.win.external(), &self.messenger.sender());
-		self.win.external_mut().camera = self.world.camera(self.win.external());
 		self.world.update(self.win.external(), &self.messenger);
+		self.win.external_mut().camera = self.world.camera(self.win.external());
 
 		let now = std::time::Instant::now();
 		self.win.external_mut().update(now);

@@ -11,6 +11,7 @@ pub struct Tile {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TileKind {
 	Land,
+	Shore,
 	Sea,
 	DeepSea,
 }
@@ -22,10 +23,12 @@ impl Tile {
 		let height = reading.abs().powf(settings.height_pow) * reading.signum();
 
 		let boundaries = [
-			(TileKind::Land, settings.sea_level),
-			(TileKind::Sea, settings.sea_level),
-			(TileKind::Sea, settings.deep_sea_level),
-			(TileKind::DeepSea, settings.bottom_of_sea),
+			(TileKind::Land, settings.land_lvl),
+			(TileKind::Shore, settings.shore_lvl),
+			(TileKind::Shore, settings.sea_lvl),
+			(TileKind::Sea, settings.sea_lvl),
+			(TileKind::Sea, settings.deep_sea_lvl),
+			(TileKind::DeepSea, settings.sea_floor_lvl),
 			(TileKind::DeepSea, f32::NEG_INFINITY),
 		];
 
@@ -67,7 +70,8 @@ impl TileKind {
 	pub fn color(&self) -> (f32, f32, f32, f32) {
 		use TileKind::*;
 		match self {
-			Land => (33., 200., 132., 255.),
+			Land => (10., 109., 70., 255.),
+			Shore => (230., 210., 75., 255.),
 			Sea => (57., 120., 168., 255.),
 			DeepSea => (15., 50., 70., 255.),
 		}

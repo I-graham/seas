@@ -64,8 +64,8 @@ impl GameObject for TileMap {
 	) -> Option<Self::Action> {
 		//Generate all chunks in view
 		let (ll, ur) = external.view_bounds();
-		let lli = Chunk::chunk_id(ll);
-		let uri = Chunk::chunk_id(ur);
+		let lli = Chunk::chunk_id(ll) - vec2(1, 1);
+		let uri = Chunk::chunk_id(ur) + vec2(1, 1);
 
 		if [lli, uri] != self.chunks_in_view {
 			let [old_ll, old_ur] = self.chunks_in_view;

@@ -12,7 +12,7 @@ pub struct Chunk {
 
 impl Chunk {
 	//# of tiles in a chunk row
-	pub const DIMENSION: usize = 64;
+	pub const DIMENSION: usize = 32;
 
 	//Size of a chunk, in pixels
 	pub const WIDTH: f32 = Self::DIMENSION as f32 * Tile::SIZE;
