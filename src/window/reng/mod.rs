@@ -114,6 +114,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			texture_bg,
 			nearest_sampler: sampler,
 			current_frame: None,
+			load_operation: None,
 			cached_buffers: Default::default(),
 			cached_count: 0,
 		};
@@ -237,21 +238,10 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 	}
 
 	pub fn clear(&mut self, color: wgpu::Color) {
-		let view = &self.get_frame().texture.create_view(&Default::default());
-		self.render_data
-			.encoder
-			.begin_render_pass(&wgpu::RenderPassDescriptor {
-				label: None,
-				color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-					view,
-					resolve_target: None,
-					ops: wgpu::Operations {
-						load: wgpu::LoadOp::Clear(color),
-						store: true,
-					},
-				})],
-				depth_stencil_attachment: None,
-			});
+		self.render_data.load_operation = Some(wgpu::Operations {
+			load: wgpu::LoadOp::Clear(color),
+			store: true,
+		});
 	}
 
 	pub fn cache(&mut self, instances: &[InstanceType]) -> CacheId {
@@ -294,6 +284,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 	pub fn draw_cached(&mut self, ids: &[CacheId]) {
 		self.set_uniform(self.uniform.expect("Uniform not given!"));
 
+		let ops = self.get_load_op();
 		let view = &self.get_frame().texture.create_view(&Default::default());
 
 		let mut render_pass =
@@ -304,10 +295,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 					color_attachments: &[Some(wgpu::RenderPassColorAttachment {
 						view,
 						resolve_target: None,
-						ops: wgpu::Operations {
-							load: wgpu::LoadOp::Load,
-							store: true,
-						},
+						ops,
 					})],
 					depth_stencil_attachment: None,
 				});
@@ -315,7 +303,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 		render_pass.set_pipeline(&self.resources.pipeline);
 		render_pass.set_bind_group(0, &self.render_data.uniform_bg, &[]);
 		render_pass.set_bind_group(2, &self.render_data.texture_bg, &[]);
-		
+
 		for id in ids {
 			let cached_buff = self.render_data.cached_buffers.get(id).unwrap();
 
@@ -338,6 +326,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 		for chunk in instances.chunks(Self::CHUNK_SIZE) {
 			self.set_instances(chunk);
 
+			let ops = self.get_load_op();
 			let view = &self.get_frame().texture.create_view(&Default::default());
 
 			let mut render_pass =
@@ -348,10 +337,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 						color_attachments: &[Some(wgpu::RenderPassColorAttachment {
 							view,
 							resolve_target: None,
-							ops: wgpu::Operations {
-								load: wgpu::LoadOp::Load,
-								store: true,
-							},
+							ops,
 						})],
 						depth_stencil_attachment: None,
 					});
@@ -366,6 +352,16 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 
 	pub fn create_texture_from_image(&self, image: &image::RgbaImage) -> wgpu::Texture {
 		self.resources.create_texture_from_image(image)
+	}
+
+	fn get_load_op(&mut self) -> wgpu::Operations<wgpu::Color> {
+		self.render_data
+			.load_operation
+			.take()
+			.unwrap_or(wgpu::Operations {
+				load: wgpu::LoadOp::Load,
+				store: true,
+			})
 	}
 
 	fn get_frame(&mut self) -> &wgpu::SurfaceTexture {

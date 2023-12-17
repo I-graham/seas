@@ -103,6 +103,7 @@ impl Window {
 		self.renderer.clear(wgpu::Color::WHITE);
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Uncached Draw"))]
 	pub fn draw(&mut self) {
 		if let DrawKind::Cached(reqs) = &self.draw_kind {
 			self.renderer.draw_cached(reqs);
@@ -122,6 +123,7 @@ impl Window {
 		self.renderer.cache(instances)
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cached Draw"))]
 	pub fn draw_cached(&mut self, id: &CacheId, pos: &Vector2<f32>, scale: f32) {
 		let uniform = glsl::Uniform {
 			ortho: Camera {

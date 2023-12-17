@@ -12,6 +12,7 @@ pub struct RenderData {
 	pub texture_bg: wgpu::BindGroup,
 	pub nearest_sampler: wgpu::Sampler,
 	pub current_frame: Option<wgpu::SurfaceTexture>,
+	pub load_operation: Option<wgpu::Operations<wgpu::Color>>,
 	pub cached_buffers: fnv::FnvHashMap<Arc<usize>, (usize, wgpu::BindGroup, wgpu::Buffer)>,
 	pub cached_count: usize,
 }
