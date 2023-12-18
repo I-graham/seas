@@ -45,12 +45,14 @@ impl GameObject for Environment {
 	) -> Option<Self::Action> {
 		self.tiles.update(external, messenger);
 
-		if let Some(wave) = Wave::maybe_spawn(&self.tiles, external) {
-			self.waves.push(wave)
-		}
+		if external.camera.scale < Self::SMALL_RENDER_SCALE {
+			if let Some(wave) = Wave::maybe_spawn(&mut self.tiles, external) {
+				self.waves.push(wave)
+			}
 
-		if let Some(puffin) = Puffin::maybe_spawn(external) {
-			self.puffins.push(puffin)
+			if let Some(puffin) = Puffin::maybe_spawn(external) {
+				self.puffins.push(puffin)
+			}
 		}
 
 		self.waves

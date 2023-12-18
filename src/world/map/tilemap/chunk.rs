@@ -37,9 +37,9 @@ impl Chunk {
 		cell_pos: Vector2<i32>,
 		noise: F,
 	) -> Self {
-		let cell = cell_pos.cast::<f32>().unwrap() * Self::WIDTH;
+		let cell = cell_pos.map(|f| f as f32) * Self::WIDTH;
 
-		let mut tiles = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
+		let mut tiles = Vec::with_capacity(Self::DIMENSIqON * Self::DIMENSION);
 
 		for i in 0..Self::DIMENSION {
 			for j in 0..Self::DIMENSION {
@@ -72,7 +72,7 @@ impl GameObject for Chunk {
 		let cache_id = self.cache.take().unwrap_or_else(|| {
 			let mut out = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
 
-			let cell = self.cell_pos.cast::<f32>().unwrap() * Self::WIDTH;
+			let cell = self.cell_pos.map(|f| f as f32) * Self::WIDTH;
 
 			for i in 0..Self::DIMENSION {
 				for j in 0..Self::DIMENSION {

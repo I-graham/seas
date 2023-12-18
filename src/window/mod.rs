@@ -158,7 +158,7 @@ impl Window {
 		self.renderer.clean_cache();
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name="Presenting"))]
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Presenting"))]
 	pub fn submit(&mut self) {
 		self.renderer.submit();
 	}

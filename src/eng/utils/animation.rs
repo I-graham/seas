@@ -13,8 +13,9 @@ pub mod curves {
 	pub const LAST: Curve = |_| 1.;
 	pub const REVERSE: Curve = |f| 1. - f;
 	pub const SIN: Curve = |f| (1. - (f * PI).cos()) / 2.;
-	pub const SIN_SQ: Curve = |f| SIN(f).powf(2.);
-	pub const REV_SIN_SQ: Curve = |f| SIN(1.0 - f).powf(2.);
+	pub const REV_SIN: Curve = |f| SIN(1. - f);
+	pub const SIN_SQ: Curve = |f| SIN(f).powi(2);
+	pub const REV_SIN_SQ: Curve = |f| REV_SIN(f).powi(2);
 	pub const SIN_BOUNCE: Curve = |f| SIN(2. * f);
 }
 

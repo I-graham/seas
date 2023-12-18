@@ -33,17 +33,15 @@ impl TileMap {
 		}
 	}
 
-	//Returns None if tile not yet generated
-	pub fn tile(&self, tile: Vector2<i32>) -> Option<&Tile> {
+	pub fn tile(&mut self, tile: Vector2<i32>) -> &Tile {
 		self.tile_f(tile.map(|i| i as f32))
 	}
 
-	//Returns None if tile not yet generated
-	pub fn tile_f(&self, pos: Vector2<f32>) -> Option<&Tile> {
+	pub fn tile_f(&mut self, pos: Vector2<f32>) -> &Tile {
 		let (chunk_id, tile_id) = Chunk::tile_id(pos);
 		let [i, j] = tile_id.into();
 
-		self.chunks.get(&chunk_id).map(|chunk| chunk.get_tile(i, j))
+		self.load_chunk(chunk_id).get_tile(i, j)
 	}
 
 	fn load_chunk(&mut self, cell: Vector2<i32>) -> &mut Chunk {

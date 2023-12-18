@@ -33,7 +33,7 @@ impl Automaton for Puffin {
 		use Signal::*;
 		type SignalTy = <Signal as SignalType>::SignalKinds;
 
-		let destination = self.heading.cast::<f32>().unwrap();
+		let destination = self.heading.map(|f| f as f32);
 		for message in messenger.local_receive(
 			destination.into(),
 			Self::SCARE_DIST,
@@ -47,7 +47,7 @@ impl Automaton for Puffin {
 			}
 		}
 
-		if !external.point_in_view(self.heading.cast::<f32>().unwrap())
+		if !external.point_in_view(self.heading.map(|f| f as f32))
 			&& !external.visible(self.instance(external).unwrap())
 		{
 			Some(Action::Die)
@@ -59,7 +59,7 @@ impl Automaton for Puffin {
 	fn next_state(&self, external: &External) -> Self::State {
 		let at_destination = self
 			.position(external)
-			.distance2(self.heading.cast::<f32>().unwrap())
+			.distance2(self.heading.map(|f| f as f32))
 			< f32::EPSILON;
 
 		if self.state() == PuffinFlap && at_destination
@@ -105,7 +105,7 @@ impl Automaton for Puffin {
 				//Find new home
 				match self.scared_of {
 					Some(pos) => {
-						let current = self.source.cast::<f32>().unwrap();
+						let current = self.source.map(|f| f as f32);
 						let dir = (current - pos).normalize_to(Self::FLEE_DIST);
 						self.heading = snap_to_grid(current + dir, Self::SPOT_DIMS);
 						self.scared_of = None;
@@ -114,7 +114,7 @@ impl Automaton for Puffin {
 					//Different x values to avoid unrealistic movement.
 					{
 						while self.heading.x == self.source.x {
-							let fsource = self.source.cast::<f32>().unwrap();
+							let fsource = self.source.map(|f| f as f32);
 
 							self.heading = snap_to_grid(
 								fsource + rand_in2d(-Self::FLEE_DIST, Self::FLEE_DIST),
@@ -163,6 +163,7 @@ impl Puffin {
 	const FLEE_DIST: f32 = 320.;
 	const SPEED: f32 = 60.0;
 	const SCARE_DIST: f32 = 10. * Tile::SIZE;
+	const SPAWN_MARGIN: f32 = 1.25;
 
 	pub fn maybe_spawn(external: &External) -> Option<Self> {
 		let v = external.view_dims() / 2.;
@@ -170,13 +171,13 @@ impl Puffin {
 		if probability(Self::DENSITY * external.delta * v.x * v.y) {
 			let pos = external.camera.pos;
 
-			let offset = v.map(|f| rand_in(-f, f));
+			let offset = v.map(|f| rand_in(-f, f)) * Self::SPAWN_MARGIN;
 			let heading = snap_to_grid(pos + offset, Self::SPOT_DIMS);
 
 			let signum = offset.map(f32::signum);
 
 			let source = snap_to_grid(
-				heading.cast::<f32>().unwrap() + v.mul_element_wise(signum),
+				heading.map(|f| f as f32) + v.mul_element_wise(signum),
 				Self::SPOT_DIMS,
 			);
 
@@ -198,8 +199,8 @@ impl Puffin {
 	}
 
 	fn position(&self, external: &External) -> Vector2<f32> {
-		let fsource = self.source.cast::<f32>().unwrap();
-		let fheading = self.heading.cast::<f32>().unwrap();
+		let fsource = self.source.map(|f| f as f32);
+		let fheading = self.heading.map(|f| f as f32);
 
 		if self.state() == PuffinFlap {
 			let dist = fsource.distance(fheading);

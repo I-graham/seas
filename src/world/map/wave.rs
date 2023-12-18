@@ -37,15 +37,17 @@ impl GameObject for Wave {
 }
 
 impl Wave {
-	pub fn maybe_spawn(map: &TileMap, external: &External) -> Option<Self> {
-		const WAVE_DENSITY: f32 = 1. / 150_000.;
+	const DENSITY: f32 = 1. / 150_000.;
+	const SPAWN_MARGIN: f32 = 1.25;
+
+	pub fn maybe_spawn(map: &mut TileMap, external: &External) -> Option<Self> {
 		let v = external.view_dims() / 2.;
 		let cam = external.camera.pos;
-		let offset = v.map(|f| rand_in(-f, f));
+		let offset = v.map(|f| rand_in(-f, f)) * Self::SPAWN_MARGIN;
 		let pos = snap_to_grid(cam + offset, (Tile::SIZE, Tile::SIZE));
 
-		if probability(WAVE_DENSITY * external.delta * v.x * v.y)
-			&& map.tile(pos).unwrap().kind == TileKind::DeepSea
+		if probability(Self::DENSITY * external.delta * v.x * v.y)
+			&& map.tile(pos).kind == TileKind::DeepSea
 		{
 			Some(Wave {
 				pos,

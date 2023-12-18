@@ -19,7 +19,7 @@ impl Default for TileMapSettings {
 			land_lvl: 0.50,
 			shore_lvl: 0.40,
 			sea_lvl: 0.35,
-			deep_sea_lvl: 0.15,
+			deep_sea_lvl: 0.30,
 			sea_floor_lvl: -0.5,
 		}
 	}

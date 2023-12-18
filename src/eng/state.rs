@@ -40,23 +40,11 @@ impl<World: Root> GameState<World> {
 		self.messenger.update(now);
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Frame Draw"))]
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Drawing"))]
 	fn draw(&mut self) {
-		{
-			let span = tracing::trace_span!("Clearing");
-			let _guard = span.enter();
-			self.win.clear();
-		}
-		{
-			let span = tracing::trace_span!("Rendering");
-			let _guard = span.enter();
-			self.world.render(&mut self.win);
-		}
-		{
-			let span = tracing::trace_span!("WinDraw");
-			let _guard = span.enter();
-			self.win.draw();
-		}
+		self.win.clear();
+		self.world.render(&mut self.win);
+		self.win.draw();
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cleanup"))]
