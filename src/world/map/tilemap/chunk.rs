@@ -39,7 +39,7 @@ impl Chunk {
 	) -> Self {
 		let cell = cell_pos.map(|f| f as f32) * Self::WIDTH;
 
-		let mut tiles = Vec::with_capacity(Self::DIMENSIqON * Self::DIMENSION);
+		let mut tiles = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
 
 		for i in 0..Self::DIMENSION {
 			for j in 0..Self::DIMENSION {
