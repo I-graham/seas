@@ -1,9 +1,10 @@
 use super::*;
 
 use crate::window::Window;
+use winit::event_loop::EventLoop;
+
 #[cfg(feature = "profile")]
 use tracing::instrument;
-use winit::event_loop::EventLoop;
 
 pub struct GameState<World: Root> {
 	pub(super) win: Window,

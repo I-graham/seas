@@ -11,6 +11,7 @@ pub use types::*;
 
 use cgmath::*;
 use std::time::Instant;
+
 #[cfg(feature = "profile")]
 use tracing::instrument;
 

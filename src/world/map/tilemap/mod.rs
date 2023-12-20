@@ -10,10 +10,11 @@ use cgmath::*;
 use chunk::*;
 use fnv::FnvHashMap;
 use noise::*;
+
 #[cfg(feature = "profile")]
 use tracing::instrument;
 
-type Noise = noise::OpenSimplex;
+type Noise = BasicMulti<OpenSimplex>;
 
 pub struct TileMap {
 	pub settings: TileMapSettings,
@@ -47,7 +48,7 @@ impl TileMap {
 	fn load_chunk(&mut self, cell: Vector2<i32>) -> &mut Chunk {
 		self.chunks
 			.entry(cell)
-			.or_insert_with(|| Chunk::generate(self.settings, cell, self.noise_fn))
+			.or_insert_with(|| Chunk::generate(self.settings, cell, self.noise_fn.clone()))
 	}
 }
 

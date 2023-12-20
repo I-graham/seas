@@ -6,6 +6,7 @@ mod texture;
 use crate::window::*;
 use boats::*;
 use map::*;
+
 #[cfg(feature = "profile")]
 use tracing::instrument;
 

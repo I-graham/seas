@@ -26,13 +26,10 @@ impl GameObject for Wave {
 	}
 
 	fn instance(&self, external: &External) -> Option<Instance> {
-		Some(
-			Instance {
-				position: self.pos.cast::<f32>().unwrap().into(),
-				..self.animation.frame(external)
-			}
-			.scale(2.),
-		)
+		Some(Instance {
+			position: self.pos.cast::<f32>().unwrap().into(),
+			..self.animation.frame(external)
+		})
 	}
 }
 

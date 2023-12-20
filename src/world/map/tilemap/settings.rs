@@ -14,13 +14,13 @@ impl Default for TileMapSettings {
 	fn default() -> Self {
 		Self {
 			seed: rand::random(),
-			height_pow: 0.8,
-			scale: 1024.,
-			land_lvl: 0.50,
-			shore_lvl: 0.40,
-			sea_lvl: 0.35,
-			deep_sea_lvl: 0.30,
-			sea_floor_lvl: -0.5,
+			height_pow: 1.,
+			scale: 3000.,
+			land_lvl: 0.20,
+			shore_lvl: 0.15,
+			sea_lvl: 0.10,
+			deep_sea_lvl: 0.,
+			sea_floor_lvl: -0.2,
 		}
 	}
 }

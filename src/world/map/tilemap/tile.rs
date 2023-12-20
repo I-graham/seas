@@ -17,7 +17,7 @@ pub enum TileKind {
 }
 
 impl Tile {
-	pub const SIZE: f32 = 32f32;
+	pub const SIZE: f32 = 32.;
 
 	pub fn generate(settings: &TileMapSettings, reading: f32) -> Self {
 		let height = reading.abs().powf(settings.height_pow) * reading.signum();
