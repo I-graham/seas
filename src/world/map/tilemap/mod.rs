@@ -1,7 +1,11 @@
 mod chunk;
+mod kinds;
+mod noise_fn;
 mod settings;
 mod tile;
 
+pub use kinds::*;
+pub use noise_fn::*;
 pub use settings::*;
 pub use tile::*;
 
@@ -9,29 +13,40 @@ use super::*;
 use cgmath::*;
 use chunk::*;
 use fnv::FnvHashMap;
-use noise::*;
 
 #[cfg(feature = "profile")]
 use tracing::instrument;
 
-type Noise = BasicMulti<OpenSimplex>;
-
 pub struct TileMap {
 	pub settings: TileMapSettings,
 	chunks: FnvHashMap<Vector2<i32>, Chunk>,
-	noise_fn: Noise,
+	noise_fn: NoiseFn,
 	chunks_in_view: [Vector2<i32>; 2],
 }
 
 impl TileMap {
+	const INITIAL_LOAD_RADIUS: usize = 500;
+
 	pub fn new(settings: TileMapSettings) -> Self {
-		let seed = settings.seed;
-		Self {
+		let rad = ((Self::INITIAL_LOAD_RADIUS / Chunk::DIMENSION) / 2) as i32;
+		let corner = vec2(rad, rad);
+
+		let noise_fn = NoiseFn::init(settings.seed);
+
+		let mut out = Self {
 			settings,
 			chunks: Default::default(),
-			noise_fn: Noise::default().set_seed(seed),
-			chunks_in_view: [vec2(0, 0); 2],
+			noise_fn,
+			chunks_in_view: [-corner, corner],
+		};
+
+		for cx in -rad..rad {
+			for cy in -rad..rad {
+				out.load_chunk(vec2(cx, cy));
+			}
 		}
+
+		out
 	}
 
 	pub fn tile(&mut self, tile: Vector2<i32>) -> &Tile {
@@ -48,7 +63,7 @@ impl TileMap {
 	fn load_chunk(&mut self, cell: Vector2<i32>) -> &mut Chunk {
 		self.chunks
 			.entry(cell)
-			.or_insert_with(|| Chunk::generate(self.settings, cell, self.noise_fn.clone()))
+			.or_insert_with(|| Chunk::generate_chunk(self.settings, cell, &self.noise_fn))
 	}
 }
 

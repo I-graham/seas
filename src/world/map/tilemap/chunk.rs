@@ -2,7 +2,6 @@ use std::cell::Cell;
 
 use super::*;
 use cgmath::*;
-use noise::*;
 
 pub struct Chunk {
 	pub cell_pos: Vector2<i32>,
@@ -32,11 +31,13 @@ impl Chunk {
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Generating Chunks"))]
-	pub fn generate<F: NoiseFn<f64, 2>>(
+	pub fn generate_chunk(
 		settings: TileMapSettings,
 		cell_pos: Vector2<i32>,
-		noise: F,
+		noise: &NoiseFn,
 	) -> Self {
+		//Generate geography
+
 		let cell = cell_pos.map(|f| f as f32) * Self::WIDTH;
 
 		let mut tiles = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
@@ -49,12 +50,17 @@ impl Chunk {
 
 				let reading = noise.get(pos.into()) as f32;
 
-				tiles.push(Tile::generate(&settings, reading));
+				tiles.push(Tile::generate_geography(&settings, reading));
 			}
 		}
 
 		let boxed_tiles = tiles.into_boxed_slice();
-		let tiles: Box<[Tile; Self::DIMENSION * Self::DIMENSION]> = boxed_tiles.try_into().unwrap();
+		let tiles = boxed_tiles.try_into().unwrap();
+
+		//Attempt to place dock in this chunk
+		if probability(settings.dock_prob) {
+			//TODO!
+		}
 
 		Self {
 			cell_pos,
@@ -74,20 +80,17 @@ impl GameObject for Chunk {
 
 			let cell = self.cell_pos.map(|f| f as f32) * Self::WIDTH;
 
+			let external = win.external();
+
 			for i in 0..Self::DIMENSION {
 				for j in 0..Self::DIMENSION {
 					let tile = self.get_tile(i, j);
 
 					let offset = vec2(i as f32 + 0.5, j as f32 + 0.5) * Tile::SIZE;
-					out.push(
-						Instance {
-							position: (cell + offset).into(),
-							color_tint: tile.color,
-							..win.external().instance(Texture::Flat)
-						}
-						.scale_rgba()
-						.scale(Tile::SIZE),
-					);
+					out.push(Instance {
+						position: (cell + offset).into(),
+						..tile.instance(external)
+					});
 				}
 			}
 

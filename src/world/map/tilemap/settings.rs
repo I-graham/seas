@@ -8,6 +8,8 @@ pub struct TileMapSettings {
 	pub sea_lvl: f32,
 	pub deep_sea_lvl: f32,
 	pub sea_floor_lvl: f32,
+	pub dock_prob: f32,
+	pub dock_depth: f32,
 }
 
 impl Default for TileMapSettings {
@@ -20,7 +22,9 @@ impl Default for TileMapSettings {
 			shore_lvl: 0.15,
 			sea_lvl: 0.10,
 			deep_sea_lvl: 0.,
-			sea_floor_lvl: -0.2,
+			sea_floor_lvl: -0.3,
+			dock_prob: 0.10,
+			dock_depth: 0.025,
 		}
 	}
 }

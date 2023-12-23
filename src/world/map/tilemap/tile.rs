@@ -5,21 +5,13 @@ use crate::window::GLvec4;
 pub struct Tile {
 	pub kind: TileKind,
 	pub height: f32,
-	pub color: GLvec4,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum TileKind {
-	Land,
-	Shore,
-	Sea,
-	DeepSea,
+	pub tint: GLvec4,
 }
 
 impl Tile {
 	pub const SIZE: f32 = 32.;
 
-	pub fn generate(settings: &TileMapSettings, reading: f32) -> Self {
+	pub fn generate_geography(settings: &TileMapSettings, reading: f32) -> Self {
 		let height = reading.abs().powf(settings.height_pow) * reading.signum();
 
 		let boundaries = [
@@ -56,24 +48,17 @@ impl Tile {
 		}
 
 		let kind = kind.unwrap();
-		let color = color.into();
+		let tint = color.into();
 
-		Self {
-			height,
-			kind,
-			color,
-		}
+		Self { height, kind, tint }
 	}
-}
 
-impl TileKind {
-	pub fn color(&self) -> (f32, f32, f32, f32) {
-		use TileKind::*;
-		match self {
-			Land => (10., 109., 70., 255.),
-			Shore => (230., 210., 75., 255.),
-			Sea => (57., 120., 168., 255.),
-			DeepSea => (15., 50., 70., 255.),
+	pub fn instance(&self, external: &External) -> Instance {
+		Instance {
+			color_tint: self.tint,
+			..external.instance(Texture::Flat)
 		}
+		.scale_rgba()
+		.scale(Tile::SIZE)
 	}
 }
