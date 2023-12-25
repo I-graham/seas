@@ -34,7 +34,7 @@ impl Chunk {
 	pub fn generate_chunk(
 		settings: TileMapSettings,
 		cell_pos: Vector2<i32>,
-		noise: &NoiseFn,
+		noise: &NoiseGenerator,
 	) -> Self {
 		//Generate geography
 
@@ -46,9 +46,9 @@ impl Chunk {
 			for j in 0..Self::DIMENSION {
 				let offset = vec2(i as f32 + 0.5, j as f32 + 0.5) * Tile::SIZE;
 
-				let pos = ((cell + offset) / settings.scale).map(|d| d as f64);
+				let pos = (cell + offset) / settings.scale;
 
-				let reading = noise.get(pos.into()) as f32;
+				let reading = noise.read(pos.into());
 
 				tiles.push(Tile::generate_geography(&settings, reading));
 			}

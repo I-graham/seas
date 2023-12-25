@@ -20,18 +20,18 @@ use tracing::instrument;
 pub struct TileMap {
 	pub settings: TileMapSettings,
 	chunks: FnvHashMap<Vector2<i32>, Chunk>,
-	noise_fn: NoiseFn,
+	noise_fn: NoiseGenerator,
 	chunks_in_view: [Vector2<i32>; 2],
 }
 
 impl TileMap {
-	const INITIAL_LOAD_RADIUS: usize = 500;
+	const INITIAL_LOAD_RADIUS: usize = Chunk::DIMENSION * 10;
 
 	pub fn new(settings: TileMapSettings) -> Self {
 		let rad = ((Self::INITIAL_LOAD_RADIUS / Chunk::DIMENSION) / 2) as i32;
 		let corner = vec2(rad, rad);
 
-		let noise_fn = NoiseFn::init(settings.seed);
+		let noise_fn = NoiseGenerator::init(settings.seed);
 
 		let mut out = Self {
 			settings,
@@ -95,6 +95,8 @@ impl GameObject for TileMap {
 				}
 			}
 		}
+
+		let world_pos = external.camera.screen_to_world(external.mouse_pos);
 
 		self.chunks_in_view = [lli, uri];
 

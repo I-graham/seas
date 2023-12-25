@@ -240,7 +240,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 	pub fn clear(&mut self, color: wgpu::Color) {
 		self.render_data.load_operation = Some(wgpu::Operations {
 			load: wgpu::LoadOp::Clear(color),
-			store: true,
+			store: wgpu::StoreOp::Store,
 		});
 	}
 
@@ -291,13 +291,12 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			self.render_data
 				.encoder
 				.begin_render_pass(&wgpu::RenderPassDescriptor {
-					label: None,
 					color_attachments: &[Some(wgpu::RenderPassColorAttachment {
 						view,
 						resolve_target: None,
 						ops,
 					})],
-					depth_stencil_attachment: None,
+					..Default::default()
 				});
 
 		render_pass.set_pipeline(&self.resources.pipeline);
@@ -333,13 +332,12 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 				self.render_data
 					.encoder
 					.begin_render_pass(&wgpu::RenderPassDescriptor {
-						label: None,
 						color_attachments: &[Some(wgpu::RenderPassColorAttachment {
 							view,
 							resolve_target: None,
 							ops,
 						})],
-						depth_stencil_attachment: None,
+						..Default::default()
 					});
 
 			render_pass.set_pipeline(&self.resources.pipeline);
@@ -360,7 +358,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			.take()
 			.unwrap_or(wgpu::Operations {
 				load: wgpu::LoadOp::Load,
-				store: true,
+				store: wgpu::StoreOp::Store,
 			})
 	}
 
