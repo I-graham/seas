@@ -45,7 +45,6 @@ impl<World: Root> GameState<World> {
 	fn draw(&mut self) {
 		self.win.clear();
 		self.world.render(&mut self.win);
-		self.win.draw();
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cleanup"))]

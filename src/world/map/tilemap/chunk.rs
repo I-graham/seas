@@ -11,7 +11,7 @@ pub struct Chunk {
 
 impl Chunk {
 	//# of tiles in a chunk row
-	pub const DIMENSION: usize = 64;
+	pub const DIMENSION: usize = 32;
 
 	//Size of a chunk, in pixels
 	pub const WIDTH: f32 = Self::DIMENSION as f32 * Tile::SIZE;
@@ -34,7 +34,7 @@ impl Chunk {
 	pub fn generate_chunk(
 		settings: TileMapSettings,
 		cell_pos: Vector2<i32>,
-		noise: &NoiseGenerator,
+		noise: &Generator,
 	) -> Self {
 		//Generate geography
 
@@ -97,7 +97,7 @@ impl GameObject for Chunk {
 			win.cache(&out)
 		});
 
-		win.draw_cached(&cache_id, &vec2(0., 0.), 1.);
+		win.draw_cached(&cache_id);
 		self.cache.set(Some(cache_id));
 	}
 

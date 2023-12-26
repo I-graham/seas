@@ -8,17 +8,26 @@ use std::sync::*;
 
 pub type CacheId = Arc<usize>;
 
+#[derive(Debug)]
+enum Command {
+	CachedDraw { id: CacheId },
+	UncachedDraw { count: u32 },
+}
+
 pub struct Renderer<UniformType: Copy + PartialEq, InstanceType> {
 	resources: resources::RenderResources2D<UniformType, InstanceType>,
 	render_data: data::RenderData,
 	pub uniform: Option<UniformType>,
+
+	sprites: Vec<InstanceType>,
+	commands: Vec<Command>,
 }
 
 impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, InstanceType> {
-	const CHUNK_SIZE: usize = 25_000;
+	const PRELOAD: usize = 25_000;
 
 	const DEFAULT_CHUNK_SIZE: wgpu::BufferAddress =
-		(Self::CHUNK_SIZE * std::mem::size_of::<InstanceType>()) as wgpu::BufferAddress;
+		(Self::PRELOAD * std::mem::size_of::<InstanceType>()) as wgpu::BufferAddress;
 
 	pub fn new(win: &winit::window::Window, sample_count: u32) -> Self {
 		let resources =
@@ -48,7 +57,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 
 		let instance_buffer = resources.device.create_buffer(&wgpu::BufferDescriptor {
 			label: Some("Instance"),
-			size: (Self::CHUNK_SIZE * std::mem::size_of::<InstanceType>()) as wgpu::BufferAddress,
+			size: (Self::PRELOAD * std::mem::size_of::<InstanceType>()) as wgpu::BufferAddress,
 			usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
 			mapped_at_creation: false,
 		});
@@ -107,14 +116,11 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			uniform_bg,
 			instance_buffer,
 			instance_bg,
-			instance_len: 0,
-			instance_cap: Self::CHUNK_SIZE,
-			encoder: resources.device.create_command_encoder(&Default::default()),
-			staging_belt: wgpu::util::StagingBelt::new(Self::DEFAULT_CHUNK_SIZE),
+			instance_cap: Self::PRELOAD,
 			texture_bg,
 			nearest_sampler: sampler,
 			current_frame: None,
-			load_operation: None,
+			clear_color: wgpu::Color::RED,
 			cached_buffers: Default::default(),
 			cached_count: 0,
 		};
@@ -123,73 +129,36 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			resources,
 			render_data,
 			uniform: None,
+
+			sprites: vec![],
+			commands: vec![],
 		}
 	}
 
-	pub fn set_uniform(&mut self, uniform: UniformType) {
-		if self.uniform != Some(uniform) {
-			self.uniform = Some(uniform);
-			let unif_data = &[uniform];
-			let unif_slice = utils::to_char_slice(unif_data);
-			self.render_data
-				.staging_belt
-				.write_buffer(
-					&mut self.render_data.encoder,
-					&self.render_data.uniform_buffer,
-					0 as wgpu::BufferAddress,
-					std::num::NonZeroU64::new(unif_slice.len() as u64).unwrap(),
-					&self.resources.device,
-				)
-				.copy_from_slice(unif_slice);
-		}
+	pub fn clear(&mut self, color: wgpu::Color) {
+		self.sprites.clear();
+		self.commands.clear();
+
+		self.render_data.clear_color = color;
 	}
 
-	pub fn set_instances(&mut self, instances: &[InstanceType]) {
-		if self.render_data.instance_cap < instances.len() {
-			self.render_data.instance_cap = instances.len();
-			self.render_data.instance_buffer =
-				self.resources
-					.device
-					.create_buffer(&wgpu::BufferDescriptor {
-						label: Some("Instance"),
-						size: std::mem::size_of_val(instances) as wgpu::BufferAddress,
-						usage: wgpu::BufferUsages::UNIFORM
-							| wgpu::BufferUsages::STORAGE
-							| wgpu::BufferUsages::COPY_DST,
-						mapped_at_creation: false,
-					});
+	//Optional optimization
+	pub fn reserve(&mut self, n: usize) {
+		self.sprites.reserve(n);
+	}
 
-			self.render_data.instance_bg =
-				self.resources
-					.device
-					.create_bind_group(&wgpu::BindGroupDescriptor {
-						label: None,
-						layout: &self.resources.instance_bgl,
-						entries: &[wgpu::BindGroupEntry {
-							binding: 0,
-							resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-								buffer: &self.render_data.instance_buffer,
-								offset: 0,
-								size: None,
-							}),
-						}],
-					});
+	pub fn queue(&mut self, instance: InstanceType) {
+		//clip unseen instances
+		self.sprites.push(instance);
+
+		match self.commands.last_mut() {
+			Some(Command::UncachedDraw { count }) => {
+				*count += 1;
+			}
+			_ => {
+				self.commands.push(Command::UncachedDraw { count: 1 });
+			}
 		}
-
-		self.render_data.instance_len = instances.len();
-
-		let inst_slice = utils::to_char_slice(instances);
-
-		self.render_data
-			.staging_belt
-			.write_buffer(
-				&mut self.render_data.encoder,
-				&self.render_data.instance_buffer,
-				0 as wgpu::BufferAddress,
-				std::num::NonZeroU64::new(inst_slice.len() as u64).unwrap(),
-				&self.resources.device,
-			)
-			.copy_from_slice(inst_slice);
 	}
 
 	pub fn set_texture(&mut self, texture: &wgpu::Texture) {
@@ -216,17 +185,51 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 				});
 	}
 
-	pub fn submit(&mut self) {
-		let encoder = std::mem::replace(
-			&mut self.render_data.encoder,
-			self.resources.create_encoder(),
-		);
+	pub fn flush(&mut self, uniform: UniformType) {
+		self.store_uniform(uniform);
+		self.store_instances();
 
-		self.render_data.staging_belt.finish();
+		let ops = wgpu::Operations {
+			load: wgpu::LoadOp::Clear(self.render_data.clear_color),
+			store: wgpu::StoreOp::Store,
+		};
+
+		let view = &self.get_frame().texture.create_view(&Default::default());
+
+		let mut encoder = self.resources.create_encoder();
+		let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+			color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+				view,
+				resolve_target: None,
+				ops,
+			})],
+			..Default::default()
+		});
+
+		render_pass.set_pipeline(&self.resources.pipeline);
+		render_pass.set_bind_group(0, &self.render_data.uniform_bg, &[]);
+		render_pass.set_bind_group(2, &self.render_data.texture_bg, &[]);
+
+		let mut i = 0;
+		for command in self.commands.drain(..) {
+			use Command::*;
+			match command {
+				CachedDraw { id } => {
+					let (len, bg, _buffer) = &self.render_data.cached_buffers[&id];
+					render_pass.set_bind_group(1, bg, &[]);
+					render_pass.draw(0..5, 0..*len as u32);
+				}
+				UncachedDraw { count } => {
+					render_pass.set_bind_group(1, &self.render_data.instance_bg, &[]);
+					render_pass.draw(0..5, i..i + count);
+					i += count;
+				}
+			}
+		}
+
+		std::mem::drop(render_pass);
 
 		self.resources.queue.submit(Some(encoder.finish()));
-
-		self.render_data.staging_belt.recall();
 
 		if let Some(frame) = self.render_data.current_frame.take() {
 			frame.present();
@@ -235,13 +238,6 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 
 	pub fn resize(&mut self, dims: winit::dpi::PhysicalSize<u32>) {
 		self.resources.resize(dims);
-	}
-
-	pub fn clear(&mut self, color: wgpu::Color) {
-		self.render_data.load_operation = Some(wgpu::Operations {
-			load: wgpu::LoadOp::Clear(color),
-			store: wgpu::StoreOp::Store,
-		});
 	}
 
 	pub fn cache(&mut self, instances: &[InstanceType]) -> CacheId {
@@ -281,36 +277,8 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 		id
 	}
 
-	pub fn draw_cached(&mut self, ids: &[CacheId]) {
-		self.set_uniform(self.uniform.expect("Uniform not given!"));
-
-		let ops = self.get_load_op();
-		let view = &self.get_frame().texture.create_view(&Default::default());
-
-		let mut render_pass =
-			self.render_data
-				.encoder
-				.begin_render_pass(&wgpu::RenderPassDescriptor {
-					color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-						view,
-						resolve_target: None,
-						ops,
-					})],
-					..Default::default()
-				});
-
-		render_pass.set_pipeline(&self.resources.pipeline);
-		render_pass.set_bind_group(0, &self.render_data.uniform_bg, &[]);
-		render_pass.set_bind_group(2, &self.render_data.texture_bg, &[]);
-
-		for id in ids {
-			let cached_buff = self.render_data.cached_buffers.get(id).unwrap();
-
-			render_pass.set_bind_group(1, &cached_buff.1, &[]);
-			render_pass.draw(0..5, 0..cached_buff.0 as u32);
-		}
-
-		drop(render_pass);
+	pub fn queue_cached(&mut self, id: CacheId) {
+		self.commands.push(Command::CachedDraw { id })
 	}
 
 	pub fn clean_cache(&mut self) {
@@ -319,47 +287,64 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			.retain(|k, _| Arc::strong_count(k) > 1);
 	}
 
-	pub fn draw(&mut self, instances: &[InstanceType]) {
-		self.set_uniform(self.uniform.expect("Uniform not given!"));
-
-		for chunk in instances.chunks(Self::CHUNK_SIZE) {
-			self.set_instances(chunk);
-
-			let ops = self.get_load_op();
-			let view = &self.get_frame().texture.create_view(&Default::default());
-
-			let mut render_pass =
-				self.render_data
-					.encoder
-					.begin_render_pass(&wgpu::RenderPassDescriptor {
-						color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-							view,
-							resolve_target: None,
-							ops,
-						})],
-						..Default::default()
-					});
-
-			render_pass.set_pipeline(&self.resources.pipeline);
-			render_pass.set_bind_group(0, &self.render_data.uniform_bg, &[]);
-			render_pass.set_bind_group(1, &self.render_data.instance_bg, &[]);
-			render_pass.set_bind_group(2, &self.render_data.texture_bg, &[]);
-			render_pass.draw(0..4, 0..self.render_data.instance_len as u32);
-		}
-	}
-
 	pub fn create_texture_from_image(&self, image: &image::RgbaImage) -> wgpu::Texture {
 		self.resources.create_texture_from_image(image)
 	}
 
-	fn get_load_op(&mut self) -> wgpu::Operations<wgpu::Color> {
-		self.render_data
-			.load_operation
-			.take()
-			.unwrap_or(wgpu::Operations {
-				load: wgpu::LoadOp::Load,
-				store: wgpu::StoreOp::Store,
-			})
+	fn store_uniform(&mut self, uniform: UniformType) {
+		if self.uniform != Some(uniform) {
+			self.uniform = Some(uniform);
+			let unif_data = &[uniform];
+			let unif_slice = utils::to_char_slice(unif_data);
+			self.resources.queue.write_buffer(
+				&self.render_data.uniform_buffer,
+				0 as wgpu::BufferAddress,
+				unif_slice,
+			);
+		}
+	}
+
+	fn store_instances(&mut self) {
+		let len = self.sprites.len();
+		let cap = self.sprites.capacity();
+
+		if self.render_data.instance_cap < len {
+			self.render_data.instance_cap = cap;
+
+			self.render_data.instance_buffer =
+				self.resources
+					.device
+					.create_buffer(&wgpu::BufferDescriptor {
+						label: Some("Instance"),
+						size: cap as wgpu::BufferAddress,
+						usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+						mapped_at_creation: false,
+					});
+
+			self.render_data.instance_bg =
+				self.resources
+					.device
+					.create_bind_group(&wgpu::BindGroupDescriptor {
+						label: None,
+						layout: &self.resources.instance_bgl,
+						entries: &[wgpu::BindGroupEntry {
+							binding: 0,
+							resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+								buffer: &self.render_data.instance_buffer,
+								offset: 0,
+								size: None,
+							}),
+						}],
+					});
+		}
+
+		let inst_slice = utils::to_char_slice(&self.sprites);
+
+		self.resources.queue.write_buffer(
+			&self.render_data.instance_buffer,
+			0 as wgpu::BufferAddress,
+			inst_slice,
+		);
 	}
 
 	fn get_frame(&mut self) -> &wgpu::SurfaceTexture {

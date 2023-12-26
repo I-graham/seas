@@ -9,7 +9,6 @@ pub use glsl::*;
 pub use reng::CacheId;
 pub use types::*;
 
-use cgmath::*;
 use std::time::Instant;
 
 #[cfg(feature = "profile")]
@@ -20,17 +19,9 @@ const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
 	height: 600.0,
 };
 
-#[derive(PartialEq, Eq)]
-enum DrawKind {
-	Cached(Vec<CacheId>),
-	Uncached,
-}
-
 pub struct Window {
 	window: winit::window::Window,
 	inputs: External,
-	output: Vec<Instance>,
-	draw_kind: DrawKind,
 	renderer: reng::Renderer<glsl::Uniform, Instance>,
 }
 
@@ -69,8 +60,6 @@ impl Window {
 				now: Instant::now(),
 				delta: 0.,
 			},
-			draw_kind: DrawKind::Uncached,
-			output: vec![],
 		}
 	}
 
@@ -84,39 +73,18 @@ impl Window {
 
 	//Optional optimization
 	pub fn reserve(&mut self, n: usize) {
-		self.output.reserve(n);
+		self.renderer.reserve(n);
+	}
+
+	pub fn clear(&mut self) {
+		//Red for debugging purposes.
+		self.renderer.clear(wgpu::Color::RED);
 	}
 
 	pub fn queue(&mut self, instance: Instance) {
 		//clip unseen instances
 		if self.inputs.visible(instance) {
-			if let DrawKind::Cached(reqs) = &self.draw_kind {
-				self.renderer.draw_cached(reqs);
-				self.draw_kind = DrawKind::Uncached;
-			}
-
-			self.output.push(instance);
-		}
-	}
-
-	pub fn clear(&mut self) {
-		//White for debugging purposes.
-		self.renderer.clear(wgpu::Color::WHITE);
-	}
-
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Uncached Draw"))]
-	pub fn draw(&mut self) {
-		if let DrawKind::Cached(reqs) = &self.draw_kind {
-			self.renderer.draw_cached(reqs);
-			self.draw_kind = DrawKind::Uncached;
-		}
-
-		if !self.output.is_empty() {
-			self.renderer.set_uniform(glsl::Uniform {
-				ortho: self.inputs.camera.proj(self.inputs.aspect()),
-			});
-			self.renderer.draw(&self.output);
-			self.output.clear();
+			self.renderer.queue(instance);
 		}
 	}
 
@@ -125,34 +93,9 @@ impl Window {
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cached Draw"))]
-	pub fn draw_cached(&mut self, id: &CacheId, pos: &Vector2<f32>, scale: f32) {
-		let uniform = glsl::Uniform {
-			ortho: Camera {
-				pos: self.inputs.camera.pos - pos,
-				scale: self.inputs.camera.scale / scale,
-			}
-			.proj(self.inputs.aspect()),
-		};
-
+	pub fn draw_cached(&mut self, id: &CacheId) {
 		let id = id.clone();
-		match &mut self.draw_kind {
-			DrawKind::Cached(reqs) => {
-				if Some(uniform) == self.renderer.uniform {
-					reqs.push(id);
-				} else {
-					self.renderer.draw_cached(reqs);
-					self.renderer.set_uniform(uniform);
-					self.draw_kind = DrawKind::Cached(vec![id]);
-				}
-			}
-			DrawKind::Uncached => {
-				if !self.output.is_empty() {
-					self.draw();
-				}
-				self.renderer.set_uniform(uniform);
-				self.draw_kind = DrawKind::Cached(vec![id]);
-			}
-		}
+		self.renderer.queue_cached(id);
 	}
 
 	pub fn clean_cache(&mut self) {
@@ -161,7 +104,15 @@ impl Window {
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Presenting"))]
 	pub fn submit(&mut self) {
-		self.renderer.submit();
+		let uniform = glsl::Uniform {
+			ortho: Camera {
+				pos: self.inputs.camera.pos,
+				scale: self.inputs.camera.scale,
+			}
+			.proj(self.inputs.aspect()),
+		};
+
+		self.renderer.flush(uniform);
 	}
 
 	pub fn resize(&mut self, dims: winit::dpi::PhysicalSize<u32>) {

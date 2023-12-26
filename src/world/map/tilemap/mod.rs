@@ -1,11 +1,11 @@
 mod chunk;
 mod kinds;
-mod noise_fn;
+mod gen;
 mod settings;
 mod tile;
 
 pub use kinds::*;
-pub use noise_fn::*;
+pub use gen::*;
 pub use settings::*;
 pub use tile::*;
 
@@ -20,18 +20,18 @@ use tracing::instrument;
 pub struct TileMap {
 	pub settings: TileMapSettings,
 	chunks: FnvHashMap<Vector2<i32>, Chunk>,
-	noise_fn: NoiseGenerator,
+	noise_fn: Generator,
 	chunks_in_view: [Vector2<i32>; 2],
 }
 
 impl TileMap {
-	const INITIAL_LOAD_RADIUS: usize = Chunk::DIMENSION * 10;
+	const PRELOAD_RADIUS: usize = Chunk::DIMENSION * 5;
 
 	pub fn new(settings: TileMapSettings) -> Self {
-		let rad = ((Self::INITIAL_LOAD_RADIUS / Chunk::DIMENSION) / 2) as i32;
+		let rad = ((Self::PRELOAD_RADIUS / Chunk::DIMENSION) / 2) as i32;
 		let corner = vec2(rad, rad);
 
-		let noise_fn = NoiseGenerator::init(settings.seed);
+		let noise_fn = Generator::init(settings.seed);
 
 		let mut out = Self {
 			settings,
