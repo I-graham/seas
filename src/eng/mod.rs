@@ -34,7 +34,7 @@ pub trait GameObject {
 		None
 	}
 
-	//If object renders a single instance, this can be implemented instea
+	//If object renders a single instance, this can be implemented instead
 	//of GameObject::render
 	fn instance(&self, _external: &External) -> Option<Instance> {
 		None

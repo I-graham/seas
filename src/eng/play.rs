@@ -21,9 +21,9 @@ pub fn play<World: Root>() -> ! {
 	let mut tracing_guard = if cfg!(feature = "profile") {
 		//Generate image with inferno:
 		//Windows:
-		//type tracing.folded | inferno-flamegraph --flamechart > tracing-flamegraph.svg
+		//type tracing.folded | inferno-flamegraph (OPTIONAL: --flamechart) > tracing-flamegraph.svg
 		//Linux:
-		//cat tracing.folded | inferno-flamegraph --flamechart > tracing-flamegraph.svg
+		//cat tracing.folded | inferno-flamegraph (OPTIONAL: --flamechart) > tracing-flamegraph.svg
 		use tracing_flame::FlameLayer;
 		use tracing_subscriber::prelude::*;
 

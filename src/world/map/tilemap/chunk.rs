@@ -40,7 +40,8 @@ impl Chunk {
 
 		let cell = cell_pos.map(|f| f as f32) * Self::WIDTH;
 
-		let mut tiles = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
+		let mut tiles = Vec::new();
+		tiles.reserve_exact(Self::DIMENSION * Self::DIMENSION);
 
 		for i in 0..Self::DIMENSION {
 			for j in 0..Self::DIMENSION {
@@ -74,7 +75,8 @@ impl GameObject for Chunk {
 	type Scene = World;
 	type Action = ();
 
-	fn render(&self, win: &mut Window) {
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Rendering Chunk"))]
+	fn render(&self, win: &mut Window) {	
 		let cache_id = self.cache.take().unwrap_or_else(|| {
 			let mut out = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
 
@@ -97,7 +99,7 @@ impl GameObject for Chunk {
 			win.cache(&out)
 		});
 
-		win.draw_cached(&cache_id);
+		win.queue_cached(&cache_id);
 		self.cache.set(Some(cache_id));
 	}
 

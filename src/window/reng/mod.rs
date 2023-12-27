@@ -161,6 +161,10 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 		}
 	}
 
+	pub fn queue_cached(&mut self, id: CacheId) {
+		self.commands.push(Command::CachedDraw { id })
+	}
+
 	pub fn set_texture(&mut self, texture: &wgpu::Texture) {
 		self.render_data.texture_bg =
 			self.resources
@@ -275,10 +279,6 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 			.insert(id.clone(), (instances.len(), bg, buffer));
 
 		id
-	}
-
-	pub fn queue_cached(&mut self, id: CacheId) {
-		self.commands.push(Command::CachedDraw { id })
 	}
 
 	pub fn clean_cache(&mut self) {

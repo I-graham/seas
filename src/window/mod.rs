@@ -81,6 +81,7 @@ impl Window {
 		self.renderer.clear(wgpu::Color::RED);
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Uncached Queue"))]
 	pub fn queue(&mut self, instance: Instance) {
 		//clip unseen instances
 		if self.inputs.visible(instance) {
@@ -92,8 +93,8 @@ impl Window {
 		self.renderer.cache(instances)
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cached Draw"))]
-	pub fn draw_cached(&mut self, id: &CacheId) {
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cached Queue"))]
+	pub fn queue_cached(&mut self, id: &CacheId) {
 		let id = id.clone();
 		self.renderer.queue_cached(id);
 	}
