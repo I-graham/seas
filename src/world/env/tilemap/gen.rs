@@ -3,6 +3,7 @@ use noise::*;
 type WaterGen = BasicMulti<OpenSimplex>;
 type IslandGen = BasicMulti<OpenSimplex>;
 
+#[derive(Clone)]
 pub struct Generator {
 	water_gen: WaterGen,
 	island_gen: IslandGen,

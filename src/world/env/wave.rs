@@ -44,7 +44,9 @@ impl Wave {
 		let pos = snap_to_grid(cam + offset, (Tile::SIZE, Tile::SIZE));
 
 		if probability(Self::DENSITY * external.delta * v.x * v.y)
-			&& map.tile(pos).kind == TileKind::DeepSea
+			&& map
+				.maybe_tile(pos)
+				.is_some_and(|tile| tile.kind == TileKind::DeepSea)
 		{
 			Some(Wave {
 				pos,

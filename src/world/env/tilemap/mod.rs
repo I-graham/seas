@@ -1,11 +1,11 @@
 mod chunk;
-mod kinds;
 mod gen;
+mod kinds;
 mod settings;
 mod tile;
 
-pub use kinds::*;
 pub use gen::*;
+pub use kinds::*;
 pub use settings::*;
 pub use tile::*;
 
@@ -19,13 +19,14 @@ use tracing::instrument;
 
 pub struct TileMap {
 	pub settings: TileMapSettings,
-	chunks: FnvHashMap<Vector2<i32>, Chunk>,
+	chunks: FnvHashMap<Vector2<i32>, Task<Chunk>>,
 	noise_fn: Generator,
 	chunks_in_view: [Vector2<i32>; 2],
 }
 
 impl TileMap {
 	const PRELOAD_RADIUS: usize = Chunk::DIMENSION * 5;
+	const PREGEN_CHUNK_RAD: i32 = 3;
 
 	pub fn new(settings: TileMapSettings) -> Self {
 		let rad = ((Self::PRELOAD_RADIUS / Chunk::DIMENSION) / 2) as i32;
@@ -60,10 +61,39 @@ impl TileMap {
 		self.load_chunk(chunk_id).get_tile(i, j)
 	}
 
+	//get tile if it has already been loaded in
+	pub fn maybe_tile(&mut self, tile: Vector2<i32>) -> Option<&Tile> {
+		self.maybe_tile_f(tile.map(|i| i as f32))
+	}
+
+	pub fn maybe_tile_f(&mut self, pos: Vector2<f32>) -> Option<&Tile> {
+		let (chunk_id, tile_id) = Chunk::tile_id(pos);
+		let [i, j] = tile_id.into();
+
+		self.maybe_chunk(chunk_id).map(|chunk| chunk.get_tile(i, j))
+	}
+
+	fn launch_chunk_gen(&mut self, cell: Vector2<i32>) {
+		let settings = self.settings;
+		let noise = self.noise_fn.clone();
+
+		let generate = move || Chunk::generate(settings, cell, &noise);
+
+		self.chunks
+			.entry(cell)
+			.or_insert_with(|| Task::launch(generate));
+	}
+
+	//return chunk if it has loaded in
+	fn maybe_chunk(&self, cell: Vector2<i32>) -> Option<&Chunk> {
+		self.chunks.get(&cell).and_then(|task| task.if_done())
+	}
+
 	fn load_chunk(&mut self, cell: Vector2<i32>) -> &mut Chunk {
 		self.chunks
 			.entry(cell)
-			.or_insert_with(|| Chunk::generate_chunk(self.settings, cell, &self.noise_fn))
+			.or_insert_with(|| Task::from_val(Chunk::generate(self.settings, cell, &self.noise_fn)))
+			.get_mut()
 	}
 }
 
@@ -82,21 +112,22 @@ impl GameObject for TileMap {
 		let uri = Chunk::chunk_id(ur) + vec2(1, 1);
 
 		if [lli, uri] != self.chunks_in_view {
+			let gen_lli = lli - Self::PREGEN_CHUNK_RAD * vec2(1, 1);
+			let gen_uri = uri + Self::PREGEN_CHUNK_RAD * vec2(1, 1);
+
 			let [old_ll, old_ur] = self.chunks_in_view;
-			for cx in (lli.x..old_ll.x).chain(old_ur.x..=uri.x) {
-				for cy in lli.y..=uri.y {
-					self.load_chunk(vec2(cx, cy));
+			for cx in (gen_lli.x..old_ll.x).chain(old_ur.x..=gen_uri.x) {
+				for cy in gen_lli.y..=gen_uri.y {
+					self.launch_chunk_gen(vec2(cx, cy));
 				}
 			}
 
-			for cx in lli.x..=uri.x {
-				for cy in (lli.y..old_ll.y).chain(old_ur.y..=uri.y) {
-					self.load_chunk(vec2(cx, cy));
+			for cx in gen_lli.x..=gen_uri.x {
+				for cy in (gen_lli.y..old_ll.y).chain(old_ur.y..=gen_uri.y) {
+					self.launch_chunk_gen(vec2(cx, cy));
 				}
 			}
 		}
-
-		let world_pos = external.camera.screen_to_world(external.mouse_pos);
 
 		self.chunks_in_view = [lli, uri];
 
@@ -108,7 +139,7 @@ impl GameObject for TileMap {
 		let [ll, ur] = self.chunks_in_view;
 		for cx in ll.x..=ur.x {
 			for cy in ll.y..=ur.y {
-				self.chunks[&vec2(cx, cy)].render(win);
+				self.chunks[&vec2(cx, cy)].get().render(win);
 			}
 		}
 	}
@@ -116,7 +147,11 @@ impl GameObject for TileMap {
 	fn cleanup(&mut self) {
 		let [ll, ur] = self.chunks_in_view;
 
-		for chunk in self.chunks.values_mut() {
+		for chunk in self
+			.chunks
+			.values_mut()
+			.filter_map(|task| task.if_done_mut())
+		{
 			let cell = chunk.cell_pos;
 			let in_view = (ll.x..=ur.x).contains(&cell.x) && (ll.y..=ur.y).contains(&cell.y);
 			if !in_view {

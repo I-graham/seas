@@ -1,11 +1,11 @@
 mod boats;
-mod map;
+mod env;
 mod signal;
 mod texture;
 
 use crate::window::*;
 use boats::*;
-use map::*;
+use env::*;
 
 #[cfg(feature = "profile")]
 use tracing::instrument;

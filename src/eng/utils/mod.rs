@@ -6,6 +6,7 @@ mod freelist;
 mod fsm;
 mod grid;
 mod relaxed;
+mod task;
 //pub mod ui;
 
 pub use animation::*;
@@ -13,6 +14,7 @@ pub use freelist::*;
 pub use fsm::Automaton;
 pub use grid::*;
 pub use relaxed::*;
+pub use task::*;
 
 pub fn unit_in_dir(deg: f32) -> Vector2<f32> {
 	vec2(deg.sin(), deg.cos())

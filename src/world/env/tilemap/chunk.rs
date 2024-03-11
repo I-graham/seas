@@ -11,7 +11,7 @@ pub struct Chunk {
 
 impl Chunk {
 	//# of tiles in a chunk row
-	pub const DIMENSION: usize = 32;
+	pub const DIMENSION: usize = 64;
 
 	//Size of a chunk, in pixels
 	pub const WIDTH: f32 = Self::DIMENSION as f32 * Tile::SIZE;
@@ -31,7 +31,8 @@ impl Chunk {
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Generating Chunks"))]
-	pub fn generate_chunk(
+	//must be a pure function to work with multithreading properly
+	pub fn generate(
 		settings: TileMapSettings,
 		cell_pos: Vector2<i32>,
 		noise: &Generator,
