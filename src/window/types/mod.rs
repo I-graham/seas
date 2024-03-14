@@ -74,6 +74,21 @@ impl External {
 			|| ((px - cx).abs() < max + dx / 2. && (py - cy).abs() < max + dy / 2.)
 	}
 
+	//Assumes existence of "Flat" texture
+	pub fn line_instance(&self, a: Vector2<f32>, b: Vector2<f32>, thickness: f32) -> Instance {
+		let diff = b - a;
+		let length = diff.magnitude();
+		let angle = 90. + Deg::atan2(diff.x, diff.y).0;
+		let midpoint = (a + b) / 2.;
+
+		Instance {
+			rotation: angle.into(),
+			scale: (length, thickness).into(),
+			position: midpoint.into(),
+			..self.texture_map[&"Flat"]
+		}
+	}
+
 	pub fn instance<T: TextureType>(&self, texture: T) -> Instance {
 		self.texture_map[&texture.name()]
 	}

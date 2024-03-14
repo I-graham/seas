@@ -48,7 +48,7 @@ impl Tile {
 		}
 
 		let kind = kind.unwrap();
-		let tint = color.into();
+		let tint = (color / 255.).into();
 
 		Self { height, kind, tint }
 	}
@@ -58,7 +58,6 @@ impl Tile {
 			color_tint: self.tint,
 			..external.instance(Texture::Flat)
 		}
-		.scale_rgba()
 		.scale(Tile::SIZE)
 	}
 }

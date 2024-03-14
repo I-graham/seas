@@ -1,22 +1,27 @@
 use super::*;
-use strum_macros::{EnumIter, IntoStaticStr}; 
+use strum_macros::{EnumIter, IntoStaticStr};
 
 #[derive(IntoStaticStr, EnumIter, Hash, PartialEq, Debug, Eq, Clone, Copy)]
 pub enum Texture {
 	Flat,
 	Puffin,
 	PuffinFlap,
-    PuffinFly, 
-    PuffinFlip,
-    PuffinPeck,
+	PuffinFly,
+	PuffinFlip,
+	PuffinPeck,
 	Raft,
 	Wave,
+	Node,
 }
 
 impl TextureType for Texture {
 	fn list() -> Vec<Self> {
 		use strum::IntoEnumIterator;
 		Self::iter().collect()
+	}
+
+	fn flat() -> Self {
+		Self::Flat
 	}
 
 	fn name(&self) -> &'static str {

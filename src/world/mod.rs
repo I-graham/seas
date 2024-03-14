@@ -2,6 +2,7 @@ mod boats;
 mod env;
 mod signal;
 mod texture;
+mod ui;
 
 use crate::window::*;
 use boats::*;
@@ -13,10 +14,12 @@ use tracing::instrument;
 pub use super::eng::*;
 pub use signal::Signal;
 pub use texture::Texture;
+pub use ui::*;
 
 pub struct World {
 	pub env: Environment,
 	pub raft: Raft,
+	pub ui: WorldUI,
 }
 
 impl Root for World {
@@ -27,6 +30,7 @@ impl Root for World {
 		Self {
 			env: Environment::new(),
 			raft: Raft::new(),
+			ui: WorldUI::new(),
 		}
 	}
 
@@ -50,18 +54,21 @@ impl Root for World {
 	fn plan(&self, external: &External, messenger: &Sender<Dispatch<Signal>>) {
 		self.raft.plan(self, external, messenger);
 		self.env.plan(self, external, messenger);
+		self.ui.plan(self, external, messenger);
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating World"))]
 	fn update(&mut self, external: &External, messenger: &Messenger<Signal>) {
 		self.raft.update(external, messenger);
 		self.env.update(external, messenger);
+		self.ui.update(external, messenger);
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "World Rendering"))]
 	fn render(&self, win: &mut Window) {
 		self.env.render(win);
 		self.raft.render(win);
+		self.ui.render(win);
 	}
 
 	fn cleanup(&mut self) {

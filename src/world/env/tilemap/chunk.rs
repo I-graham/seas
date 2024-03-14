@@ -20,6 +20,10 @@ impl Chunk {
 		&self.tiles[i * Self::DIMENSION + j]
 	}
 
+	pub fn get_tile_mut(&mut self, i: usize, j: usize) -> &mut Tile {
+		&mut self.tiles[i * Self::DIMENSION + j]
+	}
+
 	pub fn chunk_id(v: Vector2<f32>) -> Vector2<i32> {
 		v.map(|d| d.div_euclid(Chunk::WIDTH) as i32)
 	}
@@ -32,11 +36,7 @@ impl Chunk {
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Generating Chunks"))]
 	//must be a pure function to work with multithreading properly
-	pub fn generate(
-		settings: TileMapSettings,
-		cell_pos: Vector2<i32>,
-		noise: &Generator,
-	) -> Self {
+	pub fn generate(settings: TileMapSettings, cell_pos: Vector2<i32>, noise: &Generator) -> Self {
 		//Generate geography
 
 		let cell = cell_pos.map(|f| f as f32) * Self::WIDTH;
@@ -77,7 +77,7 @@ impl GameObject for Chunk {
 	type Action = ();
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Rendering Chunk"))]
-	fn render(&self, win: &mut Window) {	
+	fn render(&self, win: &mut Window) {
 		let cache_id = self.cache.take().unwrap_or_else(|| {
 			let mut out = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);
 

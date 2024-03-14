@@ -43,30 +43,30 @@ impl TileMap {
 
 		for cx in -rad..rad {
 			for cy in -rad..rad {
-				out.load_chunk(vec2(cx, cy));
+				out.launch_chunk_gen(vec2(cx, cy));
 			}
 		}
 
 		out
 	}
 
-	pub fn tile(&mut self, tile: Vector2<i32>) -> &Tile {
+	pub fn tile(&mut self, tile: Vector2<i32>) -> &mut Tile {
 		self.tile_f(tile.map(|i| i as f32))
 	}
 
-	pub fn tile_f(&mut self, pos: Vector2<f32>) -> &Tile {
+	pub fn tile_f(&mut self, pos: Vector2<f32>) -> &mut Tile {
 		let (chunk_id, tile_id) = Chunk::tile_id(pos);
 		let [i, j] = tile_id.into();
 
-		self.load_chunk(chunk_id).get_tile(i, j)
+		self.load_chunk(chunk_id).get_tile_mut(i, j)
 	}
 
 	//get tile if it has already been loaded in
-	pub fn maybe_tile(&mut self, tile: Vector2<i32>) -> Option<&Tile> {
+	pub fn maybe_tile(&self, tile: Vector2<i32>) -> Option<&Tile> {
 		self.maybe_tile_f(tile.map(|i| i as f32))
 	}
 
-	pub fn maybe_tile_f(&mut self, pos: Vector2<f32>) -> Option<&Tile> {
+	pub fn maybe_tile_f(&self, pos: Vector2<f32>) -> Option<&Tile> {
 		let (chunk_id, tile_id) = Chunk::tile_id(pos);
 		let [i, j] = tile_id.into();
 
