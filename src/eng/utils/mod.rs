@@ -20,6 +20,7 @@ pub fn unit_in_dir(deg: f32) -> Vector2<f32> {
 	vec2(deg.sin(), deg.cos())
 }
 
+//in radians
 pub fn angle(v: Vector2<f32>) -> f32 {
 	std::f32::consts::FRAC_PI_2 - v.y.atan2(v.x)
 }

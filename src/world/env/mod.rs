@@ -31,6 +31,12 @@ impl Environment {
 			puffins: vec![],
 		}
 	}
+
+	pub fn act(&mut self, action: UIAction) {
+		match action {
+			UIAction::Routing(boat, route) => self.boats.get_mut(boat).unwrap().route(route),
+		}
+	}
 }
 
 impl GameObject for Environment {

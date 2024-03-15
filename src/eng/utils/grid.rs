@@ -201,7 +201,7 @@ where
 	T: Griddable + GameObject<Scene = S, Action = A>,
 {
 	type Scene = S;
-	type Action = Vec<A>;
+	type Action = ();
 
 	fn plan(
 		&self,
@@ -214,19 +214,14 @@ where
 		}
 	}
 
-	fn update(
-		&mut self,
-		external: &External,
-		messenger: &Messenger<S::Signal>,
-	) -> Option<Self::Action> {
-		let action = self
-			.iter_mut()
-			.filter_map(|item| item.update(external, messenger))
-			.collect();
+	fn update(&mut self, external: &External, messenger: &Messenger<S::Signal>) -> Option<()> {
+		for item in self.iter_mut() {
+			item.update(external, messenger);
+		}
 
 		self.maintain();
 
-		Some(action).filter(|v: &Vec<_>| !v.is_empty())
+		None
 	}
 
 	fn render(&self, win: &mut Window) {

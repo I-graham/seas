@@ -4,9 +4,11 @@ use std::time::*;
 
 use super::{Grid, Griddable};
 
-pub trait SignalType: Copy {
-	type SignalKinds: Copy + From<Self> + Into<usize> + PartialEq;
+pub trait SignalType {
+	type SignalKinds: Copy + Into<usize> + PartialEq;
 	const COUNT: usize;
+
+	fn kind(&self) -> Self::SignalKinds;
 }
 
 pub struct Messenger<S: SignalType> {
@@ -32,9 +34,13 @@ pub struct Dispatch<S: SignalType> {
 impl<S: SignalType> Messenger<S> {
 	pub fn new() -> Self {
 		let (sender, receiver) = mpsc::channel();
+
+		let mut global = Vec::new();
+		global.resize_with(S::COUNT, Default::default);
+
 		Self {
 			now: Instant::now(),
-			global: vec![Default::default(); S::COUNT],
+			global,
 			locals: Grid::new(256.),
 			sender,
 			receiver,
@@ -48,8 +54,8 @@ impl<S: SignalType> Messenger<S> {
 	pub fn update(&mut self, now: Instant) {
 		self.now = now;
 
-		let alive = |&(time, dispatch): &(Instant, Dispatch<S>)| {
-			now < (time + Duration::from_secs_f32(dispatch.delay))
+		let alive = |(time, dispatch): &(Instant, Dispatch<S>)| {
+			now < (*time + Duration::from_secs_f32(dispatch.delay))
 		};
 
 		for bucket in &mut self.global {
@@ -63,7 +69,7 @@ impl<S: SignalType> Messenger<S> {
 			if dispatch.pos.is_some() {
 				self.locals.insert((self.now, dispatch));
 			} else {
-				let ty = S::SignalKinds::from(dispatch.signal);
+				let ty = dispatch.signal.kind();
 				self.global[ty.into()].push((self.now, dispatch));
 			}
 		}
@@ -72,11 +78,11 @@ impl<S: SignalType> Messenger<S> {
 	pub fn global_receive<'a>(
 		&'a self,
 		types: &'a [S::SignalKinds],
-	) -> impl Iterator<Item = S> + 'a {
+	) -> impl Iterator<Item = &'a S> + 'a {
 		types
 			.iter()
 			.flat_map(|&ty| self.global[ty.into()].iter())
-			.map(|(_, dispatch)| dispatch.signal)
+			.map(|(_, dispatch)| &dispatch.signal)
 	}
 
 	pub fn local_receive<'a>(
@@ -84,11 +90,11 @@ impl<S: SignalType> Messenger<S> {
 		pos: Vector2<f32>,
 		radius: f32,
 		types: &'a [S::SignalKinds],
-	) -> impl Iterator<Item = ((f32, f32), S)> + 'a {
+	) -> impl Iterator<Item = ((f32, f32), &'a S)> + 'a {
 		self.locals
 			.query_at(pos, radius)
-			.map(|(_id, &dispatch)| (dispatch.pos(), dispatch.1.signal))
-			.filter(|(_, signal)| types.contains(&S::SignalKinds::from(*signal)))
+			.map(|(_id, (_time, dispatch))| (dispatch.pos.unwrap(), &dispatch.signal))
+			.filter(|(_, signal)| types.contains(&signal.kind()))
 	}
 }
 

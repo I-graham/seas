@@ -125,17 +125,14 @@ impl External {
 			state,
 			..
 		} = input;
-		match key {
-			Some(key) if (VirtualKeyCode::A..VirtualKeyCode::F12).contains(&key) => {
-				let down = state == ElementState::Pressed;
+		if let Some(key) = key {
+			let down = state == ElementState::Pressed;
 
-				if let Some(button) = self.keymap.get_mut(&key) {
-					button.update(down);
-				} else {
-					self.keymap.insert(key, ButtonState::new(down));
-				}
+			if let Some(button) = self.keymap.get_mut(&key) {
+				button.update(down);
+			} else {
+				self.keymap.insert(key, ButtonState::new(down));
 			}
-			_ => {}
 		}
 	}
 

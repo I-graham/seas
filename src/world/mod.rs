@@ -58,7 +58,9 @@ impl Root for World {
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating World"))]
 	fn update(&mut self, external: &External, messenger: &Messenger<Signal>) {
 		self.env.update(external, messenger);
-		self.ui.update(external, messenger);
+		if let Some(action) = self.ui.update(external, messenger) {
+			self.env.act(action);
+		};
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "World Rendering"))]

@@ -4,7 +4,7 @@ use cgmath::*;
 pub type Waypoint = Vector2<f32>;
 
 pub struct Route {
-	nodes: Vec<Waypoint>,
+	pub nodes: Vec<Waypoint>,
 }
 
 impl Route {

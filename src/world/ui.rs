@@ -1,13 +1,10 @@
-use std::cell::Cell;
 use std::cell::RefCell;
-
-use winit::event::MouseButton;
 
 use super::*;
 use crate::eng::*;
 use crate::window::*;
 
-enum UIAction {
+pub enum UIAction {
 	Routing(GridId, Route), //boat & target route
 }
 
@@ -27,7 +24,7 @@ impl WorldUI {
 
 impl GameObject for WorldUI {
 	type Scene = World;
-	type Action = ();
+	type Action = UIAction;
 
 	fn plan(&self, world: &World, external: &External, _messenger: &Sender<Dispatch<Signal>>) {
 		use winit::event::VirtualKeyCode::*;
@@ -37,7 +34,7 @@ impl GameObject for WorldUI {
 		let mouse = external.camera.screen_to_world(external.mouse_pos);
 
 		match &mut *action {
-			Some(Routing(_, _)) if external.key(R).pressed() => *action = None,
+			Some(Routing(_, _)) if external.key(Escape).pressed() => *action = None,
 			Some(Routing(target_id, route)) => {
 				let target = world.env.boats.get(*target_id).unwrap();
 
@@ -61,6 +58,20 @@ impl GameObject for WorldUI {
 					}
 				}
 			}
+		}
+	}
+
+	fn update(
+		&mut self,
+		external: &External,
+		_messenger: &Messenger<Signal>,
+	) -> Option<Self::Action> {
+		use winit::event::VirtualKeyCode::*;
+
+		if external.key(Space).pressed() {
+			self.action.take()
+		} else {
+			None
 		}
 	}
 

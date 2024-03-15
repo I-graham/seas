@@ -94,11 +94,9 @@ impl Automaton for Puffin {
 		type SignalTy = <Signal as SignalType>::SignalKinds;
 
 		let destination = self.heading.map(|f| f as f32);
-		for message in messenger.local_receive(
-			destination.into(),
-			Self::SCARE_DIST,
-			&[SignalTy::BoatNearby],
-		) {
+		for message in
+			messenger.local_receive(destination, Self::SCARE_DIST, &[SignalTy::BoatNearby])
+		{
 			match message {
 				(pos, BoatNearby) => {
 					self.scared_of = Some(pos.into());

@@ -26,7 +26,7 @@ pub struct TileMap {
 
 impl TileMap {
 	const PRELOAD_RADIUS: usize = Chunk::DIMENSION * 5;
-	const PREGEN_CHUNK_RAD: i32 = 3;
+	const PREGEN_CHUNK_RAD: i32 = 5;
 
 	pub fn new(settings: TileMapSettings) -> Self {
 		let rad = ((Self::PRELOAD_RADIUS / Chunk::DIMENSION) / 2) as i32;
