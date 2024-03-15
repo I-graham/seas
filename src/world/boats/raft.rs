@@ -65,3 +65,9 @@ impl GameObject for Raft {
 		})
 	}
 }
+
+impl Griddable for Raft {
+	fn pos(&self) -> (f32, f32) {
+		self.pos.into()
+	}
+}

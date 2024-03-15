@@ -1,3 +1,4 @@
+use cgmath::*;
 use std::sync::mpsc;
 use std::time::*;
 
@@ -34,7 +35,7 @@ impl<S: SignalType> Messenger<S> {
 		Self {
 			now: Instant::now(),
 			global: vec![Default::default(); S::COUNT],
-			locals: Grid::new(128.),
+			locals: Grid::new(256.),
 			sender,
 			receiver,
 		}
@@ -80,7 +81,7 @@ impl<S: SignalType> Messenger<S> {
 
 	pub fn local_receive<'a>(
 		&'a self,
-		pos: (f32, f32),
+		pos: Vector2<f32>,
 		radius: f32,
 		types: &'a [S::SignalKinds],
 	) -> impl Iterator<Item = ((f32, f32), S)> + 'a {

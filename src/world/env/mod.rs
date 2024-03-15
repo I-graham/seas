@@ -11,8 +11,8 @@ use crate::eng::*;
 use crate::window::*;
 
 pub struct Environment {
-	raft: Raft,
-	tiles: TileMap,
+	pub boats: Grid<Raft>,
+	pub tiles: TileMap,
 	waves: Vec<Wave>,
 	puffins: Vec<Puffin>,
 }
@@ -21,8 +21,11 @@ impl Environment {
 	const SMALL_RENDER_SCALE: f32 = 6000.;
 
 	pub fn new() -> Self {
+		let mut boats = Grid::new(256.);
+		boats.insert(Raft::new());
+
 		Self {
-			raft: Raft::new(),
+			boats,
 			tiles: TileMap::new(Default::default()),
 			waves: vec![],
 			puffins: vec![],
@@ -35,7 +38,7 @@ impl GameObject for Environment {
 	type Action = ();
 
 	fn plan(&self, world: &World, external: &External, messenger: &Sender<Dispatch<Signal>>) {
-		self.raft.plan(world, external, messenger);
+		self.boats.plan(world, external, messenger);
 		for puffin in &self.puffins {
 			puffin.plan(world, external, messenger);
 		}
@@ -46,8 +49,8 @@ impl GameObject for Environment {
 		external: &External,
 		messenger: &Messenger<Signal>,
 	) -> Option<Self::Action> {
-		self.raft.update(external, messenger);
 		self.tiles.update(external, messenger);
+		self.boats.update(external, messenger);
 
 		if external.camera.scale < Self::SMALL_RENDER_SCALE {
 			if let Some(wave) = Wave::maybe_spawn(&mut self.tiles, external) {
@@ -71,7 +74,7 @@ impl GameObject for Environment {
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Environment"))]
 	fn render(&self, win: &mut Window) {
 		self.tiles.render(win);
-		self.raft.render(win);
+		self.boats.render(win);
 
 		if win.external().camera.scale < Self::SMALL_RENDER_SCALE {
 			win.reserve(self.waves.len() + self.puffins.len());

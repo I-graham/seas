@@ -1,7 +1,7 @@
 use super::*;
 use cgmath::*;
 
-type Waypoint = Vector2<f32>;
+pub type Waypoint = Vector2<f32>;
 
 pub struct Route {
 	nodes: Vec<Waypoint>,
@@ -12,8 +12,16 @@ impl Route {
 	pub const NODE_SIZE: f32 = 2. * Self::THICKNESS;
 	pub const THICKNESS: f32 = 20.;
 
-	pub fn new() -> Self {
-		Self { nodes: vec![] }
+	pub fn new(start: Waypoint) -> Self {
+		Self { nodes: vec![start] }
+	}
+
+	pub fn move_first(&mut self, waypoint: Waypoint) {
+		*self.nodes.first_mut().unwrap() = waypoint;
+	}
+
+	pub fn move_last(&mut self, waypoint: Waypoint) {
+		*self.nodes.last_mut().unwrap() = waypoint;
 	}
 
 	pub fn add_waypoint(&mut self, point: Waypoint) {
@@ -49,6 +57,5 @@ impl GameObject for Route {
 				..node_instance
 			});
 		}
-
 	}
 }

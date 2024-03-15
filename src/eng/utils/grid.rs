@@ -2,7 +2,7 @@ use super::*;
 use fnv::*;
 use rayon::prelude::*;
 
-type GridId = FreeListEntryId;
+pub type GridId = FreeListEntryId;
 
 pub struct Grid<T: Griddable> {
 	scale: f32,
@@ -70,7 +70,7 @@ impl<T: Griddable> Grid<T> {
 
 	pub fn nearest_by<M>(
 		&self,
-		pos: (f32, f32),
+		pos: Vector2<f32>,
 		radius: f32,
 		mut measure: M,
 	) -> Option<(f32, (GridId, &T))>
@@ -82,24 +82,25 @@ impl<T: Griddable> Grid<T> {
 			.min_by(|(a, _), (b, _)| a.partial_cmp(b).unwrap())
 	}
 
-	pub fn nearest(&self, pos: (f32, f32), radius: f32) -> Option<(GridId, &T)> {
+	pub fn nearest(&self, pos: Vector2<f32>, radius: f32) -> Option<(GridId, &T)> {
 		self.nearest_dist(pos, radius).map(|d| d.1)
 	}
 
-	pub fn nearest_dist(&self, pos: (f32, f32), radius: f32) -> Option<(f32, (GridId, &T))> {
+	pub fn nearest_dist(&self, pos: Vector2<f32>, radius: f32) -> Option<(f32, (GridId, &T))> {
 		self.query_with_dist(pos, radius)
 			.min_by(|(d1, _), (d2, _)| d1.partial_cmp(d2).unwrap())
 	}
 
-	pub fn query_at(&self, pos: (f32, f32), radius: f32) -> impl Iterator<Item = (GridId, &T)> {
+	pub fn query_at(&self, pos: Vector2<f32>, radius: f32) -> impl Iterator<Item = (GridId, &T)> {
 		self.query_with_dist(pos, radius).map(|(_, item)| item)
 	}
 
 	pub fn query_with_dist(
 		&self,
-		(x, y): (f32, f32),
+		pos: Vector2<f32>,
 		radius: f32,
 	) -> impl Iterator<Item = (f32, (GridId, &T))> {
+		let Vector2 { x, y } = pos;
 		let (hi_x, hi_y) = Self::grid_cell(self.scale, (x + radius, y + radius));
 		let (lo_x, lo_y) = Self::grid_cell(self.scale, (x - radius, y - radius));
 
