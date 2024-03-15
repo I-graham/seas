@@ -1,9 +1,13 @@
 use rayon::iter::*;
 use std::ops::{Index, IndexMut};
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct FreeListEntryId(usize, usize);
+
 pub struct FreeList<T> {
 	inner: Vec<Elem<T>>,
 	free: Option<usize>,
+	id_counter: usize,
 }
 
 impl<T> FreeList<T> {
@@ -11,60 +15,79 @@ impl<T> FreeList<T> {
 		Self {
 			inner: vec![],
 			free: None,
+			id_counter: 0,
 		}
 	}
 
-	pub fn get(&self, i: usize) -> Option<&T> {
-		match &self.inner[i] {
-			Elem::Obj(a) => Some(a),
-			_ => None,
+	pub fn get(&self, index: FreeListEntryId) -> Option<&T> {
+		let FreeListEntryId(id, index) = index;
+
+		match &self.inner[index] {
+			Elem::Entry(eid, item) if id == *eid => Some(item),
+			Elem::Entry(_, _) => None,
+			_ => panic!("Attempted to access empty freelist slot."),
 		}
 	}
 
-	pub fn get_mut(&mut self, i: usize) -> Option<&mut T> {
-		match &mut self.inner[i] {
-			Elem::Obj(a) => Some(a),
-			_ => None,
+	pub fn get_mut(&mut self, index: FreeListEntryId) -> Option<&mut T> {
+		let FreeListEntryId(id, index) = index;
+
+		match &mut self.inner[index] {
+			Elem::Entry(eid, item) if id == *eid => Some(item),
+			Elem::Entry(_, _) => None,
+			_ => panic!("Attempted to access empty freelist slot."),
 		}
 	}
 
 	pub fn slot_count(&self) -> usize {
-		self.inner.len()
+		self.inner.capacity()
 	}
 
 	pub fn count(&self) -> usize {
 		self.inner
 			.iter()
-			.filter(|e| matches!(e, Elem::Obj(_)))
+			.filter(|e| matches!(e, Elem::Entry(_, _)))
 			.count()
 	}
 
-	pub fn insert(&mut self, item: T) -> usize {
+	pub fn insert(&mut self, item: T) -> FreeListEntryId {
+		let id = self.id_counter;
+		self.id_counter += 1;
+
 		if let Some(first_free) = self.free {
 			self.free = match self.inner[first_free] {
 				Elem::NextFree(next) => Some(next),
 				Elem::LastFree => None,
-				Elem::Obj(_) => unreachable!(),
+				Elem::Entry(_, _) => unreachable!(),
 			};
-			self.inner[first_free] = Elem::Obj(item);
-			first_free
+			self.inner[first_free] = Elem::Entry(id, item);
+			FreeListEntryId(id, first_free)
 		} else {
-			self.inner.push(Elem::Obj(item));
-			self.inner.len() - 1
+			self.inner.push(Elem::Entry(id, item));
+			let slot = self.inner.len() - 1;
+			FreeListEntryId(id, slot)
 		}
 	}
 
-	pub fn remove(&mut self, index: usize) -> Option<T> {
-		let obj = std::mem::replace(&mut self.inner[index], Elem::LastFree);
+	pub fn remove(&mut self, index: FreeListEntryId) -> Option<T> {
+		let FreeListEntryId(id, index) = index;
 
-		if let Some(free) = self.free {
-			self.inner[index] = Elem::NextFree(free);
-		};
+		match &mut self.inner[index] {
+			Elem::Entry(eid, _) if id == *eid => {
+				let obj = std::mem::replace(&mut self.inner[index], Elem::LastFree);
 
-		self.free = Some(index);
+				if let Some(free) = self.free {
+					self.inner[index] = Elem::NextFree(free);
+				};
 
-		match obj {
-			Elem::Obj(item) => Some(item),
+				self.free = Some(index);
+
+				let Elem::Entry(_, obj) = obj else {
+					unreachable!()
+				};
+
+				Some(obj)
+			}
 			_ => None,
 		}
 	}
@@ -73,7 +96,7 @@ impl<T> FreeList<T> {
 		use Elem::*;
 		if self.free.is_some() {
 			let mut i = 0;
-			while let Obj(_) = self.inner[i] {
+			while let Entry(_, _) = self.inner[i] {
 				i += 1;
 			}
 			self.free = Some(i);
@@ -94,32 +117,16 @@ impl<T> FreeList<T> {
 		}
 	}
 
-	//Ugly solution to a borrow checking problem
-	pub fn borrow_2(&mut self, i: usize, j: usize) -> (&mut T, &mut T) {
-		debug_assert!(i != j);
-		let slice = self.inner.as_mut_slice();
-		
-		let min = i.min(j);
-		let max = i.max(j);
-
-		let (p1, p2) = slice.split_at_mut(max);
-		let (a, b) = (&mut p1[min], &mut p2[0]);
-		match (a, b) {
-			(Elem::Obj(a), Elem::Obj(b)) => (a, b),
-			_ => panic!("Attempted to access empty freelist slot."),
-		}
-	}
-
 	pub fn iter(&self) -> impl Iterator<Item = &T> {
 		self.inner.iter().filter_map(|elem| match elem {
-			Elem::Obj(item) => Some(item),
+			Elem::Entry(_, item) => Some(item),
 			_ => None,
 		})
 	}
 
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
 		self.inner.iter_mut().filter_map(|elem| match elem {
-			Elem::Obj(item) => Some(item),
+			Elem::Entry(_, item) => Some(item),
 			_ => None,
 		})
 	}
@@ -128,40 +135,46 @@ impl<T> FreeList<T> {
 impl<T: Send + Sync> FreeList<T> {
 	pub fn par_iter(&self) -> impl ParallelIterator<Item = &T> {
 		self.inner.par_iter().filter_map(|elem| match elem {
-			Elem::Obj(item) => Some(item),
+			Elem::Entry(_, item) => Some(item),
 			_ => None,
 		})
 	}
 
 	pub fn par_iter_mut(&mut self) -> impl ParallelIterator<Item = &mut T> {
 		self.inner.par_iter_mut().filter_map(|elem| match elem {
-			Elem::Obj(item) => Some(item),
+			Elem::Entry(_, item) => Some(item),
 			_ => None,
 		})
 	}
 }
 
-impl<T> Index<usize> for FreeList<T> {
+impl<T> Index<FreeListEntryId> for FreeList<T> {
 	type Output = T;
-	fn index(&self, index: usize) -> &Self::Output {
+	fn index(&self, index: FreeListEntryId) -> &Self::Output {
+		let FreeListEntryId(id, index) = index;
+
 		match &self.inner[index] {
-			Elem::Obj(item) => item,
+			Elem::Entry(eid, item) if id == *eid => item,
+			Elem::Entry(_, _) => panic!("Item no longer exists"),
 			_ => panic!("Attempted to access empty freelist slot."),
 		}
 	}
 }
 
-impl<T> IndexMut<usize> for FreeList<T> {
-	fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+impl<T> IndexMut<FreeListEntryId> for FreeList<T> {
+	fn index_mut(&mut self, index: FreeListEntryId) -> &mut Self::Output {
+		let FreeListEntryId(id, index) = index;
+
 		match &mut self.inner[index] {
-			Elem::Obj(item) => item,
+			Elem::Entry(eid, item) if id == *eid => item,
+			Elem::Entry(_, _) => panic!("Item no longer exists"),
 			_ => panic!("Attempted to access empty freelist slot."),
 		}
 	}
 }
 
 enum Elem<T> {
-	Obj(T),
+	Entry(usize, T),
 	NextFree(usize),
 	LastFree,
 }

@@ -86,7 +86,7 @@ impl<S: SignalType> Messenger<S> {
 	) -> impl Iterator<Item = ((f32, f32), S)> + 'a {
 		self.locals
 			.query_at(pos, radius)
-			.map(|&dispatch| (dispatch.pos(), dispatch.1.signal))
+			.map(|(_id, &dispatch)| (dispatch.pos(), dispatch.1.signal))
 			.filter(|(_, signal)| types.contains(&S::SignalKinds::from(*signal)))
 	}
 }

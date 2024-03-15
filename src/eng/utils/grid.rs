@@ -2,9 +2,11 @@ use super::*;
 use fnv::*;
 use rayon::prelude::*;
 
+type GridId = FreeListEntryId;
+
 pub struct Grid<T: Griddable> {
 	scale: f32,
-	grid: FnvHashMap<(i32, i32), Vec<usize>>,
+	grid: FnvHashMap<(i32, i32), Vec<GridId>>,
 	elems: FreeList<T>,
 }
 
@@ -35,58 +37,61 @@ impl<T: Griddable> Grid<T> {
 		self.elems.count()
 	}
 
-	pub fn insert(&mut self, item: T) {
+	pub fn insert(&mut self, item: T) -> GridId {
 		let cell = Self::grid_cell(self.scale, item.pos());
 		let index = self.elems.insert(item);
 		self.grid.entry(cell).or_default().push(index);
+		index
 	}
 
-	pub fn get(&self, pos: (f32, f32)) -> Option<&T> {
-		let cell = self.grid.get(&Self::grid_cell(self.scale, pos));
-		cell.and_then(|v| {
-			v.iter()
-				.find_map(|&index| Some(&self.elems[index]).filter(|e| e.pos() == pos))
-		})
+	pub fn get(&self, index: GridId) -> Option<&T> {
+		self.elems.get(index)
 	}
 
-	pub fn remove(&mut self, pos: (f32, f32)) -> Option<T> {
-		let cell = self.grid.get_mut(&Self::grid_cell(self.scale, pos));
-
-		if let Some(v) = cell {
-			if let Some((cell_i, &elem_i)) = v
-				.iter()
-				.enumerate()
-				.find(|(_, &index)| self.elems[index].pos() == pos)
-			{
-				v.swap_remove(cell_i);
-				self.elems.remove(elem_i)
-			} else {
-				None
-			}
-		} else {
-			None
-		}
+	pub fn get_mut(&mut self, index: GridId) -> Option<&mut T> {
+		self.elems.get_mut(index)
 	}
 
-	pub fn nearest_by<P>(&self, pos: (f32, f32), radius: f32, mut predicate: P) -> Option<(f32, &T)>
+	pub fn remove(&mut self, index: GridId) -> Option<T> {
+		let elem = self.elems.get(index)?;
+
+		let pos = elem.pos();
+
+		let v = self.grid.get_mut(&Self::grid_cell(self.scale, pos))?;
+
+		let (cell_i, &elem_i) = v
+			.iter()
+			.enumerate()
+			.find(|(_, &index)| self.elems[index].pos() == pos)?;
+
+		v.swap_remove(cell_i);
+		self.elems.remove(elem_i)
+	}
+
+	pub fn nearest_by<M>(
+		&self,
+		pos: (f32, f32),
+		radius: f32,
+		mut measure: M,
+	) -> Option<(f32, (GridId, &T))>
 	where
-		P: FnMut(f32, &T) -> Option<f32>,
+		M: FnMut(f32, &T) -> Option<f32>,
 	{
 		self.query_with_dist(pos, radius)
-			.filter_map(|(d, t)| predicate(d, t).zip(Some(t)))
+			.filter_map(|(d, (id, t))| measure(d, t).zip(Some((id, t))))
 			.min_by(|(a, _), (b, _)| a.partial_cmp(b).unwrap())
 	}
 
-	pub fn nearest(&self, pos: (f32, f32), radius: f32) -> Option<&T> {
+	pub fn nearest(&self, pos: (f32, f32), radius: f32) -> Option<(GridId, &T)> {
 		self.nearest_dist(pos, radius).map(|d| d.1)
 	}
 
-	pub fn nearest_dist(&self, pos: (f32, f32), radius: f32) -> Option<(f32, &T)> {
+	pub fn nearest_dist(&self, pos: (f32, f32), radius: f32) -> Option<(f32, (GridId, &T))> {
 		self.query_with_dist(pos, radius)
 			.min_by(|(d1, _), (d2, _)| d1.partial_cmp(d2).unwrap())
 	}
 
-	pub fn query_at(&self, pos: (f32, f32), radius: f32) -> impl Iterator<Item = &T> {
+	pub fn query_at(&self, pos: (f32, f32), radius: f32) -> impl Iterator<Item = (GridId, &T)> {
 		self.query_with_dist(pos, radius).map(|(_, item)| item)
 	}
 
@@ -94,7 +99,7 @@ impl<T: Griddable> Grid<T> {
 		&self,
 		(x, y): (f32, f32),
 		radius: f32,
-	) -> impl Iterator<Item = (f32, &T)> {
+	) -> impl Iterator<Item = (f32, (GridId, &T))> {
 		let (hi_x, hi_y) = Self::grid_cell(self.scale, (x + radius, y + radius));
 		let (lo_x, lo_y) = Self::grid_cell(self.scale, (x - radius, y - radius));
 
@@ -104,42 +109,9 @@ impl<T: Griddable> Grid<T> {
 			.flat_map(|(_, v)| v.iter())
 			.map(move |&index| {
 				let item = &self.elems[index];
-				(dist(item.pos(), (x, y)), item)
+				(dist(item.pos(), (x, y)), (index, item))
 			})
-			.filter(move |(d, i)| *d <= radius && i.alive())
-	}
-
-	//pairs not guaranteed to come out in any particular order.
-	//all pairs are unordered and distinctly located.
-	pub fn apply_to_pairs(&mut self, distance: f32, mut f: impl FnMut(&mut T, &mut T)) {
-		let radius = (distance / self.scale).ceil() as i32;
-
-		let near_cells = self
-			.grid
-			.iter()
-			.flat_map(|(&(ax, ay), ids)| {
-				self.grid.iter().filter_map(move |((bx, by), jds)| {
-					if (ax..=ax + radius).contains(bx) && (ay - radius..=ay + radius).contains(by) {
-						Some((ids, jds))
-					} else {
-						None
-					}
-				})
-			})
-			.collect::<Vec<_>>();
-
-		for (is, js) in near_cells {
-			for &i in is {
-				for &j in js {
-					if i < j {
-						let (a, b) = self.elems.borrow_2(i, j);
-						if dist(a.pos(), b.pos()) <= distance {
-							f(a, b);
-						}
-					}
-				}
-			}
-		}
+			.filter(move |(d, (_id, i))| *d <= radius && i.alive())
 	}
 
 	pub fn retain<P: FnMut(&T) -> bool>(&mut self, mut predicate: P) {

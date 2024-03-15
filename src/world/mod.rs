@@ -18,7 +18,6 @@ pub use ui::*;
 
 pub struct World {
 	pub env: Environment,
-	pub raft: Raft,
 	pub ui: WorldUI,
 }
 
@@ -29,37 +28,35 @@ impl Root for World {
 	fn init(_external: &External) -> Self {
 		Self {
 			env: Environment::new(),
-			raft: Raft::new(),
 			ui: WorldUI::new(),
 		}
 	}
 
 	fn camera(&self, inputs: &External) -> Camera {
-		let mut camera = Camera {
-			pos: self.raft.pos,
-			..inputs.camera
+		const CAM_SCALE_SPEED: f32 = 500.;
+		const CAM_MOVE_SPEED: f32 = 500.;
+
+		let [q, z, w, a, s, d] = {
+			use winit::event::VirtualKeyCode::*;
+			[Q, Z, W, A, S, D].map(|k| if inputs.key(k).is_down() { 1 } else { -1 })
 		};
 
-		use winit::event::VirtualKeyCode;
-		const CAM_SCALE_SPEED: f32 = 500.;
-		camera.scale += CAM_SCALE_SPEED
-			* inputs.delta
-			* (inputs.key(VirtualKeyCode::Q).is_down() as i32
-				- inputs.key(VirtualKeyCode::Z).is_down() as i32) as f32;
+		let mut camera = inputs.camera;
+		camera.scale += CAM_SCALE_SPEED * inputs.delta * (q - z) as f32;
+		camera.pos.x += CAM_MOVE_SPEED * inputs.delta * (d - a) as f32;
+		camera.pos.y += CAM_MOVE_SPEED * inputs.delta * (w - s) as f32;
 
 		camera
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Planning World"))]
 	fn plan(&self, external: &External, messenger: &Sender<Dispatch<Signal>>) {
-		self.raft.plan(self, external, messenger);
 		self.env.plan(self, external, messenger);
 		self.ui.plan(self, external, messenger);
 	}
 
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Updating World"))]
 	fn update(&mut self, external: &External, messenger: &Messenger<Signal>) {
-		self.raft.update(external, messenger);
 		self.env.update(external, messenger);
 		self.ui.update(external, messenger);
 	}
@@ -67,7 +64,6 @@ impl Root for World {
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "World Rendering"))]
 	fn render(&self, win: &mut Window) {
 		self.env.render(win);
-		self.raft.render(win);
 		self.ui.render(win);
 	}
 
