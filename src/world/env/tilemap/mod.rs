@@ -18,7 +18,7 @@ use fnv::FnvHashMap;
 use tracing::instrument;
 
 pub struct TileMap {
-	pub settings: TileMapSettings,
+	settings: TileMapSettings,
 	chunks: FnvHashMap<Vector2<i32>, Task<Chunk>>,
 	noise_fn: Generator,
 	chunks_in_view: [Vector2<i32>; 2],

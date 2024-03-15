@@ -3,7 +3,7 @@ use crate::eng::*;
 use crate::window::*;
 
 enum UIAction {
-	DrawingRoute(Route),
+	Routing(Route),
 }
 
 pub struct WorldUI {
@@ -27,7 +27,7 @@ impl GameObject for WorldUI {
 	) -> Option<Self::Action> {
 		use UIAction::*;
 		match &mut self.action {
-			Some(DrawingRoute(route)) => {
+			Some(Routing(route)) => {
 				if external.left_mouse.pressed() {
 					let mouse_pos = external.mouse_pos;
 					let pos = external.camera.screen_to_world(mouse_pos);
@@ -43,7 +43,7 @@ impl GameObject for WorldUI {
 			None => {
 				use winit::event::VirtualKeyCode::*;
 				if external.key(R).pressed() {
-					self.action = Some(DrawingRoute(Route::new()));
+					self.action = Some(Routing(Route::new()));
 				}
 			}
 		}
@@ -54,7 +54,7 @@ impl GameObject for WorldUI {
 		use UIAction::*;
 
 		match &self.action {
-			Some(DrawingRoute(route)) => route.render(win),
+			Some(Routing(route)) => route.render(win),
 			_ => (),
 		}
 	}

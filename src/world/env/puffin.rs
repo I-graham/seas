@@ -146,11 +146,18 @@ impl Automaton for Puffin {
 		}
 	}
 
-	fn enter_from(&mut self, old: Self::State) {
-		if probability(0.05) && ![PuffinFly, PuffinFlap].contains(&old) {
-			self.flipped = !self.flipped;
+	fn exit_to(&mut self, _new: Self::State) {
+		match self.state() {
+			PuffinFlap | PuffinFly => (),
+			_ => {
+				if probability(0.05) {
+					self.flipped = !self.flipped
+				}
+			}
 		}
+	}
 
+	fn enter_from(&mut self, old: Self::State) {
 		use Texture::*;
 		let mut reps = 1.;
 		let (duration, curve) = match self.state() {

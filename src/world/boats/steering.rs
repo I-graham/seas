@@ -30,6 +30,15 @@ impl GameObject for Route {
 			return;
 		}
 
+		let mut start = self.nodes[0];
+		for &node in &self.nodes[1..] {
+			win.queue(Instance {
+				color_tint: Self::COLOR.into(),
+				..win.external().line_instance(start, node, Self::THICKNESS)
+			});
+			start = node;
+		}
+
 		let node_instance = win.external().instance(Texture::Node);
 
 		for &node in &self.nodes {
@@ -41,13 +50,5 @@ impl GameObject for Route {
 			});
 		}
 
-		let mut start = self.nodes[0];
-		for &node in &self.nodes[1..] {
-			win.queue(Instance {
-				color_tint: Self::COLOR.into(),
-				..win.external().line_instance(start, node, Self::THICKNESS)
-			});
-			start = node;
-		}
 	}
 }
