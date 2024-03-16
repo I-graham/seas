@@ -2,6 +2,9 @@ use super::*;
 use fnv::*;
 use rayon::prelude::*;
 
+#[cfg(feature="profile")]
+use tracing::instrument;
+
 pub type GridId = FreeListEntryId;
 
 pub struct Grid<T: Griddable> {
@@ -224,6 +227,7 @@ where
 		None
 	}
 
+	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Rendering"))]
 	fn render(&self, win: &mut Window) {
 		for item in self.iter() {
 			item.render(win);

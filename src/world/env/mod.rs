@@ -34,7 +34,7 @@ impl Environment {
 
 	pub fn act(&mut self, action: UIAction) {
 		match action {
-			UIAction::Routing(boat, route) => self.boats.get_mut(boat).unwrap().route(route),
+			UIAction::Routing(boat, route) => self.boats.get_mut(boat).unwrap().follow(route),
 		}
 	}
 }
@@ -67,6 +67,7 @@ impl GameObject for Environment {
 				self.puffins.push(puffin)
 			}
 		}
+		
 
 		self.waves
 			.retain_mut(|wave| wave.update(external, messenger) != Some(wave::Action::Die));
@@ -80,13 +81,14 @@ impl GameObject for Environment {
 	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Environment"))]
 	fn render(&self, win: &mut Window) {
 		self.tiles.render(win);
-		self.boats.render(win);
 
 		if win.external().camera.scale < Self::SMALL_RENDER_SCALE {
 			win.reserve(self.waves.len() + self.puffins.len());
 			self.waves.iter().for_each(|wave| wave.render(win));
 			self.puffins.iter().for_each(|puffin| puffin.render(win));
 		}
+
+		self.boats.render(win);
 	}
 
 	fn cleanup(&mut self) {

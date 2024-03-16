@@ -23,10 +23,10 @@ use super::tilemap::Tile;
 
 impl Puffin {
 	const SPOT_DIMS: (f32, f32) = (32., 16.);
-	const DENSITY: f32 = 1. / 10_000_000.;
-	const FLEE_DIST: f32 = 320.;
-	const SPEED: f32 = 60.0;
-	const SCARE_DIST: f32 = 10. * Tile::SIZE;
+	const DENSITY: f32 = 1. / 50_000_000.;
+	const FLEE_DIST: f32 = 30. * Tile::SIZE;
+	const SPEED: f32 = 100.0;
+	const SCARE_DIST: f32 = 5. * Tile::SIZE;
 	const SPAWN_MARGIN: f32 = 1.25;
 
 	pub fn maybe_spawn(external: &External) -> Option<Self> {

@@ -10,7 +10,7 @@ pub struct Raft {
 }
 
 impl Raft {
-	const SPEED: f32 = 300.0;
+	const SPEED: f32 = 200.0;
 	const TURN_SPEED: f32 = 60. * std::f32::consts::TAU / 360.;
 
 	const WAYPOINT_TOLERANCE: f32 = 100.;
@@ -23,7 +23,7 @@ impl Raft {
 		}
 	}
 
-	pub fn route(&mut self, route: Route) {
+	pub fn follow(&mut self, route: Route) {
 		self.route = Some((0, route))
 	}
 }
@@ -48,7 +48,6 @@ impl GameObject for Raft {
 		if *wpi >= route.nodes.len() {
 			self.route.take();
 			self.pos += Self::SPEED * external.delta * self.dir;
-
 			return None;
 		}
 
@@ -61,12 +60,12 @@ impl GameObject for Raft {
 		}
 
 		//gradual turning
-		let curr_ang = angle(self.dir);
+		let ang = angle(self.dir);
 		let Rad(diff) = desired_dir.angle(self.dir);
-		let new_ang = curr_ang + Self::TURN_SPEED * diff * external.delta;
+		let max_turn = Self::TURN_SPEED * external.delta;
+		let capped_diff = diff.signum() * diff.abs().min(max_turn);
 
-		self.dir = unit_in_dir(new_ang);
-
+		self.dir = unit_in_dir(ang + capped_diff);
 		self.pos += Self::SPEED * external.delta * self.dir;
 
 		None

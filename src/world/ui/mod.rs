@@ -1,12 +1,11 @@
-use std::cell::RefCell;
+mod action;
+
+pub use action::*;
 
 use super::*;
 use crate::eng::*;
 use crate::window::*;
-
-pub enum UIAction {
-	Routing(GridId, Route), //boat & target route
-}
+use std::cell::RefCell;
 
 pub struct WorldUI {
 	action: RefCell<Option<UIAction>>,
@@ -69,7 +68,7 @@ impl GameObject for WorldUI {
 		use winit::event::VirtualKeyCode::*;
 
 		if external.key(Space).pressed() {
-			self.action.take()
+			self.action.take().map(|action| action.finish())
 		} else {
 			None
 		}

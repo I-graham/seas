@@ -76,7 +76,6 @@ impl GameObject for Chunk {
 	type Scene = World;
 	type Action = ();
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Rendering Chunk"))]
 	fn render(&self, win: &mut Window) {
 		let cache_id = self.cache.take().unwrap_or_else(|| {
 			let mut out = Vec::with_capacity(Self::DIMENSION * Self::DIMENSION);

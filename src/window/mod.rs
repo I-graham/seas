@@ -15,8 +15,8 @@ use std::time::Instant;
 use tracing::instrument;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
-	width: 800.0,
-	height: 600.0,
+	width: 1000.0,
+	height: 800.0,
 };
 
 pub struct Window {
@@ -81,7 +81,6 @@ impl Window {
 		self.renderer.clear(wgpu::Color::RED);
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Uncached Queue"))]
 	pub fn queue(&mut self, instance: Instance) {
 		//clip unseen instances
 		if self.inputs.visible(instance) {
@@ -93,7 +92,6 @@ impl Window {
 		self.renderer.cache(instances)
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Cached Queue"))]
 	pub fn queue_cached(&mut self, id: &CacheId) {
 		let id = id.clone();
 		self.renderer.queue_cached(id);

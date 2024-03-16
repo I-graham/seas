@@ -9,8 +9,8 @@ pub struct Route {
 
 impl Route {
 	pub const COLOR: (f32, f32, f32, f32) = (1., 0.25, 0.25, 1.);
-	pub const NODE_SIZE: f32 = 2. * Self::THICKNESS;
-	pub const THICKNESS: f32 = 20.;
+	pub const NODE_SIZE: f32 = 3. * Self::THICKNESS;
+	pub const THICKNESS: f32 = 15.;
 
 	pub fn new(start: Waypoint) -> Self {
 		Self { nodes: vec![start] }
@@ -26,6 +26,10 @@ impl Route {
 
 	pub fn add_waypoint(&mut self, point: Waypoint) {
 		self.nodes.push(point);
+	}
+
+	pub fn finish(&mut self) {
+		let _ = self.nodes.pop();
 	}
 }
 

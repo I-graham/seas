@@ -4,14 +4,43 @@ use super::*;
 use crate::eng::*;
 use crate::window::*;
 
+use cgmath::*;
+
 pub struct Wave {
-	pos: Vector2<i32>,
+	pos: Vector2<f32>,
 	animation: Animation<Texture>,
 }
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum Action {
 	Die,
+}
+
+impl Wave {
+	const DENSITY: f32 = 1. / 500_000.;
+	const SPAWN_MARGIN: f32 = 1.5;
+
+	pub fn maybe_spawn(map: &mut TileMap, external: &External) -> Option<Self> {
+		let v = external.view_dims() / 2.;
+		let cam = external.camera.pos;
+		let offset = v.map(|f| rand_in(-f, f)) * Self::SPAWN_MARGIN;
+		let pos = cam + offset;
+
+		let tile_id = snap_to_grid(pos, (Tile::SIZE, Tile::SIZE));
+
+		if probability(Self::DENSITY * external.delta * v.x * v.y)
+			&& map
+				.maybe_tile(tile_id)
+				.is_some_and(|tile| tile.kind == TileKind::DeepSea)
+		{
+			Some(Wave {
+				pos,
+				animation: Animation::new(Texture::Wave, 4., curves::SIN_SQ, 1.0),
+			})
+		} else {
+			None
+		}
+	}
 }
 
 impl GameObject for Wave {
@@ -27,33 +56,8 @@ impl GameObject for Wave {
 
 	fn instance(&self, external: &External) -> Option<Instance> {
 		Some(Instance {
-			position: self.pos.cast::<f32>().unwrap().into(),
+			position: self.pos.into(),
 			..self.animation.frame(external)
 		})
-	}
-}
-
-impl Wave {
-	const DENSITY: f32 = 1. / 150_000.;
-	const SPAWN_MARGIN: f32 = 1.25;
-
-	pub fn maybe_spawn(map: &mut TileMap, external: &External) -> Option<Self> {
-		let v = external.view_dims() / 2.;
-		let cam = external.camera.pos;
-		let offset = v.map(|f| rand_in(-f, f)) * Self::SPAWN_MARGIN;
-		let pos = snap_to_grid(cam + offset, (Tile::SIZE, Tile::SIZE));
-
-		if probability(Self::DENSITY * external.delta * v.x * v.y)
-			&& map
-				.maybe_tile(pos)
-				.is_some_and(|tile| tile.kind == TileKind::DeepSea)
-		{
-			Some(Wave {
-				pos,
-				animation: Animation::new(Texture::Wave, 3., curves::SIN_SQ, 1.0),
-			})
-		} else {
-			None
-		}
 	}
 }
