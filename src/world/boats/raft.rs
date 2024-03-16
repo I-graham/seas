@@ -10,10 +10,10 @@ pub struct Raft {
 }
 
 impl Raft {
-	const SPEED: f32 = 50.0;
-	const TURN_SPEED: f32 = 25. * std::f32::consts::TAU / 360.;
+	const SPEED: f32 = 300.0;
+	const TURN_SPEED: f32 = 60. * std::f32::consts::TAU / 360.;
 
-	const WAYPOINT_TOLERANCE: f32 = 50.;
+	const WAYPOINT_TOLERANCE: f32 = 100.;
 
 	pub fn new() -> Self {
 		Self {
