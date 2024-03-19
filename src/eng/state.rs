@@ -14,7 +14,7 @@ pub struct GameState<World: Root> {
 
 impl<World: Root> GameState<World> {
 	pub fn new(event_loop: &EventLoop<()>) -> Self {
-		let api = Window::new::<World::Texture>(event_loop);
+		let api = Window::new::<World::Texture>(World::TITLE, event_loop);
 		Self {
 			world: World::init(api.external()),
 			messenger: Messenger::new(),

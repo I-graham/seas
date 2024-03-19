@@ -4,8 +4,6 @@ use super::*;
 use crate::eng::*;
 use crate::window::*;
 
-use cgmath::*;
-
 pub struct Wave {
 	pos: Vector2<f32>,
 	animation: Animation<Texture>,

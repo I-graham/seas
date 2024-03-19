@@ -15,8 +15,8 @@ use std::time::Instant;
 use tracing::instrument;
 
 const START_WIN_SIZE: winit::dpi::PhysicalSize<f32> = winit::dpi::PhysicalSize {
-	width: 1000.0,
-	height: 800.0,
+	width: 800.0,
+	height: 600.0,
 };
 
 pub struct Window {
@@ -27,10 +27,12 @@ pub struct Window {
 
 impl Window {
 	pub fn new<Texture: TextureType>(
+		title: &'static str,
 		event_loop: &winit::event_loop::EventLoopWindowTarget<()>,
 	) -> Self {
 		let window = winit::window::WindowBuilder::new()
 			.with_min_inner_size(START_WIN_SIZE)
+			.with_title(title)
 			.build(event_loop)
 			.expect("unable to create window");
 

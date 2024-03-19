@@ -25,11 +25,11 @@ pub struct TileMap {
 }
 
 impl TileMap {
-	const PRELOAD_RADIUS: usize = Chunk::DIMENSION * 5;
-	const PREGEN_CHUNK_RAD: i32 = 5;
+	const PRELOAD_RADIUS: usize = 5;
+	const PREGEN_CHUNK_RAD: i32 = 2;
 
 	pub fn new(settings: TileMapSettings) -> Self {
-		let rad = ((Self::PRELOAD_RADIUS / Chunk::DIMENSION) / 2) as i32;
+		let rad = Self::PRELOAD_RADIUS as i32;
 		let corner = vec2(rad, rad);
 
 		let noise_fn = Generator::init(settings.seed);

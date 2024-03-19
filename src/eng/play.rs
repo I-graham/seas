@@ -5,6 +5,8 @@ use super::*;
 use crate::window::{Camera, TextureType};
 
 pub trait Root: Sized + 'static {
+	const TITLE: &'static str = "Game Window";
+
 	type Texture: TextureType;
 	type Signal: SignalType;
 
@@ -24,10 +26,10 @@ pub fn play<World: Root>() -> ! {
 		//type tracing.folded | inferno-flamegraph (OPTIONAL: --flamechart) > tracing-flamegraph.svg
 		//Linux:
 		//cat tracing.folded | inferno-flamegraph (OPTIONAL: --flamechart) > tracing-flamegraph.svg
-		use tracing_flame::FlameLayer;
+		use tracing_chrome::ChromeLayerBuilder;
 		use tracing_subscriber::prelude::*;
 
-		let (flame_layer, _guard) = FlameLayer::with_file("./tracing.folded").unwrap();
+		let (flame_layer, _guard) = ChromeLayerBuilder::new().build();
 
 		tracing_subscriber::registry().with(flame_layer).init();
 

@@ -33,6 +33,25 @@ impl Instance {
 			..self
 		}
 	}
+
+	pub fn contains(&self, pos: Vector2<f32>) -> bool {
+		let GLvec2(x, y) = self.position;
+		let center = vec2(x, y);
+
+		let GLfloat(angle) = self.rotation;
+
+		let s = (-angle).sin();
+		let c = (-angle).cos();
+
+		//rotated d
+		let d = pos - center;
+		let rx = d.x * c - d.y * s;
+		let ry = d.x * s + d.y * c;
+
+		let GLvec2(sx, sy) = self.scale;
+
+		(x - sx..x + sx).contains(&(rx + x)) && (y - sy..y + sy).contains(&(ry + y))
+	}
 }
 
 impl Default for Instance {

@@ -82,8 +82,8 @@ impl External {
 		let midpoint = (a + b) / 2.;
 
 		Instance {
-			rotation: angle.into(),
-			scale: (length, thickness).into(),
+			rotation: GLfloat(angle),
+			scale: GLvec2(length, thickness),
 			position: midpoint.into(),
 			..self.texture_map[&"Flat"]
 		}

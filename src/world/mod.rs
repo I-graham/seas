@@ -22,6 +22,8 @@ pub struct World {
 }
 
 impl Root for World {
+	const TITLE: &'static str = "Boat Game";
+
 	type Texture = Texture;
 	type Signal = Signal;
 

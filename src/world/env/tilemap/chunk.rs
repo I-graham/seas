@@ -34,7 +34,7 @@ impl Chunk {
 		(chunk, tile)
 	}
 
-	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Generating Chunks"))]
+	//	#[cfg_attr(feature = "profile", instrument(skip_all, name = "Generating Chunks"))]
 	//must be a pure function to work with multithreading properly
 	pub fn generate(settings: TileMapSettings, cell_pos: Vector2<i32>, noise: &Generator) -> Self {
 		//Generate geography

@@ -221,11 +221,11 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 				CachedDraw { id } => {
 					let (len, bg, _buffer) = &self.render_data.cached_buffers[&id];
 					render_pass.set_bind_group(1, bg, &[]);
-					render_pass.draw(0..5, 0..*len as u32);
+					render_pass.draw(0..4, 0..*len as u32);
 				}
 				UncachedDraw { count } => {
 					render_pass.set_bind_group(1, &self.render_data.instance_bg, &[]);
-					render_pass.draw(0..5, i..i + count);
+					render_pass.draw(0..4, i..i + count);
 					i += count;
 				}
 			}
@@ -246,6 +246,7 @@ impl<UniformType: Copy + PartialEq, InstanceType> Renderer<UniformType, Instance
 
 	pub fn cache(&mut self, instances: &[InstanceType]) -> CacheId {
 		use wgpu::util::*;
+	
 		let buffer = self
 			.resources
 			.device

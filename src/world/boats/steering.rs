@@ -3,12 +3,12 @@ use cgmath::*;
 
 pub type Waypoint = Vector2<f32>;
 
-pub struct Route {
+pub struct Path {
 	pub nodes: Vec<Waypoint>,
 }
 
-impl Route {
-	pub const COLOR: (f32, f32, f32, f32) = (1., 0.25, 0.25, 1.);
+impl Path {
+	pub const COLOR: GLvec4 = GLvec4(1., 0.25, 0.25, 1.);
 	pub const NODE_SIZE: f32 = 3. * Self::THICKNESS;
 	pub const THICKNESS: f32 = 15.;
 
@@ -33,7 +33,7 @@ impl Route {
 	}
 }
 
-impl GameObject for Route {
+impl GameObject for Path {
 	type Scene = World;
 	type Action = ();
 
@@ -45,7 +45,7 @@ impl GameObject for Route {
 		let mut start = self.nodes[0];
 		for &node in &self.nodes[1..] {
 			win.queue(Instance {
-				color_tint: Self::COLOR.into(),
+				color_tint: Self::COLOR,
 				..win.external().line_instance(start, node, Self::THICKNESS)
 			});
 			start = node;
@@ -55,9 +55,9 @@ impl GameObject for Route {
 
 		for &node in &self.nodes {
 			win.queue(Instance {
-				color_tint: Self::COLOR.into(),
+				color_tint: Self::COLOR,
 				position: node.into(),
-				scale: (Self::NODE_SIZE * vec2(1., 1.)).into(),
+				scale: GLvec2(Self::NODE_SIZE, Self::NODE_SIZE),
 				..node_instance
 			});
 		}

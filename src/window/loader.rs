@@ -56,8 +56,8 @@ pub fn load_textures<T: TextureType>() -> (image::RgbaImage, TextureMap) {
 			text.name(),
 			Instance {
 				texture,
-				scale: (width, height / text.frame_count() as f32).into(),
-				rotation: 0f32.into(),
+				scale: GLvec2(width, height / text.frame_count() as f32),
+				rotation: GLfloat(0f32),
 				..Default::default()
 			},
 		);

@@ -33,28 +33,33 @@ impl GameObject for WorldUI {
 		let mouse = external.camera.screen_to_world(external.mouse_pos);
 
 		match &mut *action {
-			Some(Routing(_, _)) if external.key(Escape).pressed() => *action = None,
-			Some(Routing(target_id, route)) => {
+			Some(_) if external.key(Escape).pressed() => *action = None,
+			Some(Route(target_id, path)) => {
 				let target = world.env.boats.get(*target_id).unwrap();
 
-				route.move_first(target.pos);
-				route.move_last(mouse);
+				path.move_first(target.pos);
+				path.move_last(mouse);
 
 				if external.left_mouse.pressed() {
-					route.add_waypoint(mouse);
+					path.add_waypoint(mouse);
 				}
 			}
+			Some(Place(pos)) => *pos = mouse,
 			None => {
+				//If left click on raft, begin routing
 				if external.left_mouse.pressed() {
-					let mouse_pos = external.mouse_pos;
-					let pos = external.camera.screen_to_world(mouse_pos);
-					let target = world.env.boats.nearest(pos, Self::SELECT_RADIUS);
+					let target = world.env.boats.nearest(mouse, Self::SELECT_RADIUS);
 					if let Some((id, boat)) = target {
-						let mut route = Route::new(boat.pos);
-						route.add_waypoint(pos);
+						let mut path = Path::new(boat.pos);
+						path.add_waypoint(mouse);
 
-						*action = Some(Routing(id, route));
+						*action = Some(Route(id, path));
 					}
+				}
+
+				//If right click, spawn raft
+				if external.right_mouse.pressed() {
+					*action = Some(Place(mouse));
 				}
 			}
 		}
@@ -66,11 +71,17 @@ impl GameObject for WorldUI {
 		_messenger: &Messenger<Signal>,
 	) -> Option<Self::Action> {
 		use winit::event::VirtualKeyCode::*;
+		use UIAction::*;
 
-		if external.key(Space).pressed() {
-			self.action.take().map(|action| action.finish())
-		} else {
-			None
+		match self.action.get_mut() {
+			Some(Place(_)) => self.action.take(),
+			_ => {
+				if external.key(Space).pressed() {
+					self.action.take().map(|action| action.finish())
+				} else {
+					None
+				}
+			}
 		}
 	}
 
@@ -78,7 +89,7 @@ impl GameObject for WorldUI {
 		use UIAction::*;
 
 		match &*self.action.borrow() {
-			Some(Routing(_, route)) => route.render(win),
+			Some(Route(_, path)) => path.render(win),
 			_ => (),
 		}
 	}

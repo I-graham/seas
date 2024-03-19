@@ -21,11 +21,8 @@ impl Environment {
 	const SMALL_RENDER_SCALE: f32 = 6000.;
 
 	pub fn new() -> Self {
-		let mut boats = Grid::new(256.);
-		boats.insert(Raft::new());
-
 		Self {
-			boats,
+			boats: Grid::new(256.),
 			tiles: TileMap::new(Default::default()),
 			waves: vec![],
 			puffins: vec![],
@@ -34,7 +31,10 @@ impl Environment {
 
 	pub fn act(&mut self, action: UIAction) {
 		match action {
-			UIAction::Routing(boat, route) => self.boats.get_mut(boat).unwrap().follow(route),
+			UIAction::Route(boat, path) => self.boats.get_mut(boat).unwrap().follow(path),
+			UIAction::Place(pos) => {
+				self.boats.insert(Raft::new(pos));
+			}
 		}
 	}
 }
@@ -67,7 +67,6 @@ impl GameObject for Environment {
 				self.puffins.push(puffin)
 			}
 		}
-		
 
 		self.waves
 			.retain_mut(|wave| wave.update(external, messenger) != Some(wave::Action::Die));
